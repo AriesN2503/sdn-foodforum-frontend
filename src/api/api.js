@@ -222,7 +222,7 @@ export const api = {
   deleteUser: async (userId) => {
     return new Promise((resolve) => {
       setTimeout(() => {
-        resolve({ message: "Đã xóa người dùng" })
+        resolve({ message: `Đã xóa người dùng id: ${userId}` })
       }, 500)
     })
   },

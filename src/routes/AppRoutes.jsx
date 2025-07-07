@@ -7,6 +7,7 @@ import Login from "../pages/Login"
 import Register from "../pages/Register"
 import ModeratorDashboard from "../pages/ModeratorDashboard"
 import AdminDashboard from "../pages/AdminDashboard"
+import { UserProfile } from "../pages/UserProfile"
 
 const AppRoutes = () => {
   return (
@@ -14,28 +15,30 @@ const AppRoutes = () => {
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
         <Route path="post/:id" element={<PostDetail />} />
-
-        <Route
-          path="moderator"
-          element={
-            <ProtectedRoute requiredRole="moderator">
-              <ModeratorDashboard />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="admin"
-          element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          }
-        />
-
       </Route>
+      <Route
+        path="moderator"
+        element={
+          // <ProtectedRoute requiredRole="moderator">
+          //   <ModeratorDashboard />
+          // </ProtectedRoute>
+          <ModeratorDashboard />
+        }
+      />
+
+
+      <Route
+        path="admin"
+        element={
+          // <ProtectedRoute requiredRole="admin">
+          //   <AdminDashboard />
+          // </ProtectedRoute>
+          <AdminDashboard />
+        }
+      />
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
+      <Route path='profile' element={<UserProfile />} />
     </Routes>
   )
 }
