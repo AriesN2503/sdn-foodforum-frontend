@@ -6,6 +6,7 @@ import { Label } from "../components/ui/label"
 import { Input } from "../components/ui/input"
 import { Checkbox } from "../components/ui/checkbox"
 import { Button } from "../components/ui/button"
+import { register as registerApi } from '../api/auth'
 
 export default function Register() {
     const navigate = useNavigate()
@@ -74,13 +75,16 @@ export default function Register() {
         if (!validateForm()) return
 
         setIsLoading(true)
+        setErrors({})
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1500))
-            console.log("Registered:", formData)
+            await registerApi({
+                username: formData.username,
+                email: formData.email,
+                password: formData.password,
+            })
             navigate("/login")
         } catch (error) {
-            console.error("Register error:", error)
-            setErrors({ general: "Something went wrong. Try again." })
+            setErrors({ general: error?.response?.data?.error || error.message || "Something went wrong. Try again." })
         } finally {
             setIsLoading(false)
         }

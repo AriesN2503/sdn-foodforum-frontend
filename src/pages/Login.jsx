@@ -6,6 +6,8 @@ import { Label } from "../components/ui/label"
 import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
 import { Checkbox } from "../components/ui/checkbox"
+import { login as loginApi } from '../api/auth'
+import { AUTH_STORAGE_KEY } from '../utils/auth'
 
 export default function Login() {
     const navigate = useNavigate()
@@ -54,13 +56,20 @@ export default function Login() {
         if (!validateForm()) return
 
         setIsLoading(true)
-
+        setErrors({})
         try {
-            await new Promise((resolve) => setTimeout(resolve, 1500)) // simulate API
-            console.log("Login successful:", formData)
+            const data = await loginApi(formData.email, formData.password)
+            // Store user and token in localStorage for AuthContext compatibility
+            localStorage.setItem(
+                AUTH_STORAGE_KEY,
+                JSON.stringify({
+                    user: data.user || {},
+                    token: data.accessToken,
+                })
+            )
             navigate("/")
         } catch (err) {
-            setErrors({ general: `Invalid email or password ${err}` })
+            setErrors({ general: err?.response?.data?.error || err.message || "Invalid email or password" })
         } finally {
             setIsLoading(false)
         }
