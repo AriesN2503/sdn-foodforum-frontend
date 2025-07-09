@@ -6,17 +6,20 @@ const axiosClient = axios.create({
 })
 
 axiosClient.interceptors.request.use((config) => {
-    const token = localStorage.getItem("accessToken")
-    const tokenAdmin = localStorage.getItem("adminToken")
-    if (tokenAdmin) {
-        config.headers["Authorization"] = `Bearer ${tokenAdmin}`
-    } else if (token) {
-        config.headers["Authorization"] = `Bearer ${token}`
+    const auth = localStorage.getItem("foodforum_auth");
+    let token = null;
+    if (auth) {
+        try {
+            token = JSON.parse(auth).token;
+        } catch (e) {
+            token = null;
+        }
     }
-    return config
-},
-    (error) => Promise.reject(error)
-)
+    if (token) {
+        config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+});
 
 axiosClient.interceptors.response.use(
     (response) => response,

@@ -2,7 +2,7 @@ import { Search, ChefHat, Coffee, User as UserIcon } from "lucide-react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Link } from "react-router"
-import { Avatar, AvatarFallback } from "./ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { useAuth } from "../hooks/useAuth"
 
 export default function Header() {
@@ -31,12 +31,15 @@ export default function Header() {
           {isAuthenticated && user ? (
             <Link to="/profile">
               <Avatar className="h-9 w-9 cursor-pointer">
-                {/* If you have user.avatar, use <AvatarImage src={user.avatar} /> */}
-                <AvatarFallback className="bg-orange-100 text-orange-600">
-                  {user.username
-                    ? user.username.slice(0, 2).toUpperCase()
-                    : <UserIcon className="h-5 w-5 text-orange-500" />}
-                </AvatarFallback>
+                {user.avatar ? (
+                  <AvatarImage src={user.avatar} />
+                ) : (
+                  <AvatarFallback className="bg-orange-100 text-orange-600">
+                    {user.username
+                      ? user.username.slice(0, 2).toUpperCase()
+                      : <UserIcon className="h-5 w-5 text-orange-500" />}
+                  </AvatarFallback>
+                )}
               </Avatar>
             </Link>
           ) : (

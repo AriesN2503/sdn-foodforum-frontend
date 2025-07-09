@@ -104,12 +104,21 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: "CLEAR_ERROR" })
   }
 
+  const setUser = (user) => {
+    dispatch({
+      type: "LOGIN_SUCCESS",
+      payload: { user, token: state.token },
+    });
+    storeAuth({ user, token: state.token });
+  };
+
   const value = {
     ...state,
     login,
     register,
     logout,
     clearError,
+    setUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
