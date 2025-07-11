@@ -8,6 +8,7 @@ import Register from "../pages/Register"
 import ModeratorDashboard from "../pages/ModeratorDashboard"
 import AdminDashboard from "../pages/AdminDashboard"
 import { UserProfile } from "../pages/UserProfile"
+import Chat from "../pages/Chat"
 
 const AppRoutes = () => {
   return (
@@ -39,6 +40,15 @@ const AppRoutes = () => {
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
       <Route path='profile' element={<UserProfile />} />
+      <Route 
+        path="chat" 
+        element={
+        //   <ProtectedRoute requiredRole="user">
+        //     <Chat />
+        //   </ProtectedRoute>
+          <Chat />
+        } 
+      />
     </Routes>
   )
 }

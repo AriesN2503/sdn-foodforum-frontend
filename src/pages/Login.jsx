@@ -59,6 +59,7 @@ export default function Login() {
         setErrors({})
         try {
             const data = await loginApi(formData.email, formData.password)
+            console.log(data)
             // Store user and token in localStorage for AuthContext compatibility
             localStorage.setItem(
                 AUTH_STORAGE_KEY,
