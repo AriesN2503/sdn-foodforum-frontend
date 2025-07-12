@@ -17,8 +17,8 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
-        <Route path="post/:id" element={<PostDetail />} />
       </Route>
+      <Route path="post/:id" element={<PostDetail />} />
       <Route
         path="moderator"
         element={
