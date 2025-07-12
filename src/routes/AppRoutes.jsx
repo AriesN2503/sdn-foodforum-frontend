@@ -9,6 +9,7 @@ import ModeratorDashboard from "../pages/ModeratorDashboard"
 import AdminDashboard from "../pages/AdminDashboard"
 import { UserProfile } from "../pages/UserProfile"
 import Chat from "../pages/Chat"
+import NotFound from "../pages/NotFound"
 
 const AppRoutes = () => {
   return (
@@ -49,6 +50,8 @@ const AppRoutes = () => {
           <Chat />
         } 
       />
+
+      <Route path='*' element={<NotFound />} />
     </Routes>
   )
 }
