@@ -1,21 +1,17 @@
 import axios from "axios"
 
 const axiosClient = axios.create({
-    baseURL: import.meta.env.VITE_APP_API_URL.endsWith('/api')
-        ? import.meta.env.VITE_APP_API_URL
-        : import.meta.env.VITE_APP_API_URL.replace(/\/$/, '') + '/api',
+    baseURL: import.meta.env.VITE_APP_API_URL + "/api",
     withCredentials: true,
 })
 
 axiosClient.interceptors.request.use((config) => {
-    const auth = localStorage.getItem("foodforum_auth");
-    let token = null;
-    if (auth) {
-        try {
-            token = JSON.parse(auth).token;
-        } catch (e) {
-            token = null;
-        }
+    const token = localStorage.getItem("foodforum_auth") ? JSON.parse(localStorage.getItem("foodforum_auth")).token : null
+    const tokenAdmin = localStorage.getItem("adminToken") ? JSON.parse(localStorage.getItem("adminToken")).token : null
+    if (tokenAdmin) {
+        config.headers["Authorization"] = `Bearer ${tokenAdmin}`
+    } else if (token) {
+        config.headers["Authorization"] = `Bearer ${token}`
     }
     if (token) {
         config.headers["Authorization"] = `Bearer ${token}`;

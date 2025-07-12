@@ -62,6 +62,16 @@ export default function Login() {
         setErrors({})
         try {
             await login(formData.email, formData.password)
+            const data = await loginApi(formData.email, formData.password)
+            console.log(data)
+            // Store user and token in localStorage for AuthContext compatibility
+            localStorage.setItem(
+                AUTH_STORAGE_KEY,
+                JSON.stringify({
+                    user: data.user || {},
+                    token: data.accessToken,
+                })
+            )
             navigate("/")
         } catch (err) {
             setErrors({ general: err?.response?.data?.error || err.message || "Invalid email or password" })

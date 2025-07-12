@@ -1,12 +1,14 @@
-import { Search, ChefHat, Coffee, User as UserIcon } from "lucide-react"
+import { Search, ChefHat, Coffee, MessageCircle, User as UserIcon } from "lucide-react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Link } from "react-router"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { useAuth } from "../hooks/useAuth"
 
+
+
 export default function Header() {
-  const { isAuthenticated, user } = useAuth()
+  const { isAuthenticated, user } = useAuth();
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -28,6 +30,9 @@ export default function Header() {
         </div>
 
         <div className="flex items-center space-x-3">
+          <Link to="/chat" className="p-2 rounded-full hover:bg-orange-100 transition-colors">
+            <MessageCircle className="h-6 w-6 text-orange-500" />
+          </Link>
           {isAuthenticated && user ? (
             <Link to="/profile">
               <Avatar className="h-9 w-9 cursor-pointer">
