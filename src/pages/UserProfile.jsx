@@ -49,7 +49,7 @@ export function UserProfile() {
         getCurrentUser().then(user => {
             setProfileData(prev => ({
                 ...prev,
-                id: user.id || user._id || prev.id, // add this line
+                id: user.id || user._id || prev.id, // ensure id is set!
                 username: user.username || prev.username,
                 email: user.email || prev.email,
                 avatar: user.avatar || prev.avatar,
@@ -196,6 +196,8 @@ export function UserProfile() {
         if (!profileData.avatarFile) return;
         setSaving(true);
         try {
+            console.log("Avatar file:", profileData.avatarFile);
+            console.log("User ID:", profileData.id);
             // 1. Upload the file to Firebase Storage and get the download URL
             const downloadURL = await uploadAvatarToFirebase(profileData.avatarFile, profileData.id);
 
@@ -318,6 +320,8 @@ export function UserProfile() {
                                                     className="min-h-[100px]"
                                                     maxLength={300}
                                                 />
+                                                {/* Avatar upload UI hidden for now */}
+                                                {/*
                                                 <div className="flex flex-col items-center mt-2">
                                                     <input
                                                         type="file"
@@ -331,6 +335,7 @@ export function UserProfile() {
                                                         Upload Avatar
                                                     </Button>
                                                 </div>
+                                                */}
                                             </div>
                                         ) : (
                                             <>
