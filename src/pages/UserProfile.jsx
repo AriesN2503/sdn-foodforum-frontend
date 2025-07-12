@@ -22,8 +22,10 @@ import {
     ThumbsUp,
     ArrowLeft,
 } from "lucide-react"
-import { getCurrentUser, updateUser } from "../api/user";
+import { getCurrentUser, updateUser, uploadAvatarToFirebase } from "../api/user";
 import { useAuth } from "../hooks/useAuth";
+import axiosClient from "../api/axiosClient";
+import { useNavigate } from "react-router";
 
 const DEFAULT_FOOD_IMAGE = 'https://i.pinimg.com/736x/02/6b/01/026b01f777c272eb91173ae461ef0116.jpg'
 
@@ -39,7 +41,9 @@ export function UserProfile() {
     })
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState(null);
-    const { setUser } = useAuth();
+    const [avatarPreview, setAvatarPreview] = useState(null);
+    const { setUser, logout } = useAuth();
+    const navigate = useNavigate();
 
     useEffect(() => {
         getCurrentUser().then(user => {
@@ -61,6 +65,7 @@ export function UserProfile() {
                 username: profileData.username,
                 phone_number: profileData.phone_number,
                 avatar: profileData.avatar,
+                bio: profileData.bio,
             };
             const updated = await updateUser(profileData.id, updateData);
             setProfileData(prev => ({
@@ -177,6 +182,50 @@ export function UserProfile() {
         return <Badge className={colors[difficulty] || "bg-gray-100 text-gray-800"}>{difficulty}</Badge>
     }
 
+    const handleAvatarFileChange = (e) => {
+        const file = e.target.files[0];
+        setProfileData(prev => ({ ...prev, avatarFile: file }));
+        if (file) {
+            setAvatarPreview(URL.createObjectURL(file));
+        } else {
+            setAvatarPreview(null);
+        }
+    };
+
+    const handleAvatarUpload = async () => {
+        if (!profileData.avatarFile) return;
+        setSaving(true);
+        try {
+            // 1. Upload the file to Firebase Storage and get the download URL
+            const downloadURL = await uploadAvatarToFirebase(profileData.avatarFile, profileData.id);
+
+            // 2. Update the user's avatar in your backend (just the URL, not the file)
+            const updateData = {
+                avatar: downloadURL,
+                // Optionally include other fields you want to update:
+                // username: profileData.username,
+                // phone_number: profileData.phone_number,
+                // bio: profileData.bio,
+            };
+            const updated = await updateUser(profileData.id, updateData);
+
+            // 3. Update local state and context
+            setProfileData(prev => ({
+                ...prev,
+                avatar: updated.avatar,
+                avatarFile: undefined
+            }));
+            setUser(updated);
+            setAvatarPreview(null);
+            setError(null);
+        } catch (err) {
+            setError("Failed to upload avatar.");
+            console.error(err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -202,6 +251,16 @@ export function UserProfile() {
                             disabled={saving}
                         >
                             {isEditing ? (saving ? "Saving..." : "Save Changes") : "Edit Profile"}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="ml-2"
+                            onClick={() => {
+                                logout();
+                                navigate('/login');
+                            }}
+                        >
+                            Log out
                         </Button>
                     </div>
                 </div>
@@ -252,6 +311,26 @@ export function UserProfile() {
                                                     className="text-center"
                                                     placeholder="Avatar image URL"
                                                 />
+                                                <Textarea
+                                                    value={profileData.bio}
+                                                    onChange={e => setProfileData({ ...profileData, bio: e.target.value })}
+                                                    placeholder="Tell us about yourself..."
+                                                    className="min-h-[100px]"
+                                                    maxLength={300}
+                                                />
+                                                <div className="flex flex-col items-center mt-2">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleAvatarFileChange}
+                                                    />
+                                                    {avatarPreview && (
+                                                        <img src={avatarPreview} alt="Avatar Preview" className="h-20 w-20 rounded-full mt-2 object-cover" />
+                                                    )}
+                                                    <Button onClick={handleAvatarUpload} disabled={saving || !profileData.avatarFile} className="mt-2">
+                                                        Upload Avatar
+                                                    </Button>
+                                                </div>
                                             </div>
                                         ) : (
                                             <>

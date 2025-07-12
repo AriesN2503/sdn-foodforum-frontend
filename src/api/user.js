@@ -1,4 +1,6 @@
 import axiosClient from './axiosClient'
+import { storage } from '../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export const getUsers = async () => {
     const response = await axiosClient.get('/users')
@@ -23,4 +25,11 @@ export const deleteUser = async (id) => {
 export const getCurrentUser = async () => {
     const response = await axiosClient.get('/users/me')
     return response.data
+}
+
+export async function uploadAvatarToFirebase(file, userId) {
+    if (!file || !userId) throw new Error('File and userId are required');
+    const avatarRef = ref(storage, `avatars/${userId}/${file.name}`);
+    await uploadBytes(avatarRef, file);
+    return await getDownloadURL(avatarRef);
 }

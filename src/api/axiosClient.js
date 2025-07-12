@@ -1,7 +1,9 @@
 import axios from "axios"
 
 const axiosClient = axios.create({
-    baseURL: import.meta.env.VITE_APP_API_URL,
+    baseURL: import.meta.env.VITE_APP_API_URL.endsWith('/api')
+        ? import.meta.env.VITE_APP_API_URL
+        : import.meta.env.VITE_APP_API_URL.replace(/\/$/, '') + '/api',
     withCredentials: true,
 })
 
