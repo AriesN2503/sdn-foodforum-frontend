@@ -46,12 +46,12 @@ export default function AdminDashboard() {
         { id: "users", label: "Users", icon: Users },
         // { id: "recipes", label: "Recipes", icon: BookOpen },
         { id: "posts", label: "Posts", icon: MessageSquare },
-        { id: "settings", label: "Settings", icon: Settings },
+        // { id: "settings", label: "Settings", icon: Settings },
     ]
 
     // Dashboard Data
     const stats = [
-        { title: "Total Users", value: "2,847", change: "+12%", icon: Users, color: "text-blue-600", bg: "bg-blue-100" },
+        { title: "Total Users", value: users.length, change: "+12%", icon: Users, color: "text-blue-600", bg: "bg-blue-100" },
         // { title: "Total Recipes", value: "1,234", change: "+8%", icon: BookOpen, color: "text-green-600", bg: "bg-green-100" },
         { title: "Total Posts", value: "5,678", change: "+15%", icon: MessageSquare, color: "text-purple-600", bg: "bg-purple-100" },
         { title: "Active Users", value: "892", change: "+5%", icon: TrendingUp, color: "text-orange-600", bg: "bg-orange-100" },
@@ -564,14 +564,14 @@ export default function AdminDashboard() {
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent className="w-56" align="end">
-                                <DropdownMenuItem>
+                                {/* <DropdownMenuItem>
                                     <User className="mr-2 h-4 w-4" />
                                     <span>Profile</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuItem>
                                     <Settings className="mr-2 h-4 w-4" />
                                     <span>Settings</span>
-                                </DropdownMenuItem>
+                                </DropdownMenuItem> */}
                                 <DropdownMenuItem>
                                     <LogOut className="mr-2 h-4 w-4" />
                                     <span>Log out</span>
@@ -592,7 +592,7 @@ export default function AdminDashboard() {
                                 <button
                                     key={tab.id}
                                     onClick={() => setActiveTab(tab.id)}
-                                    className={`flex items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm ${activeTab === tab.id
+                                    className={`flex cursor-pointer items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm ${activeTab === tab.id
                                         ? "border-orange-500 text-orange-600"
                                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                                         }`}
