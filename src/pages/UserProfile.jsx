@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link } from "react-router"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button"
@@ -22,26 +22,66 @@ import {
     ThumbsUp,
     ArrowLeft,
 } from "lucide-react"
+import { getCurrentUser, updateUser, uploadAvatarToFirebase } from "../api/user";
+import { useAuth } from "../hooks/useAuth";
+import axiosClient from "../api/axiosClient";
+import { useNavigate } from "react-router";
 
 const DEFAULT_FOOD_IMAGE = 'https://i.pinimg.com/736x/02/6b/01/026b01f777c272eb91173ae461ef0116.jpg'
 
 export function UserProfile() {
     const [isEditing, setIsEditing] = useState(false)
     const [profileData, setProfileData] = useState({
-        name: "John Doe",
-        username: "johndoe",
+
         email: "john@example.com",
+        avatar: "",
+        phone_number: "",
         bio: "Passionate home cook and food enthusiast. Love sharing recipes and discovering new flavors from around the world!",
-        location: "San Francisco, CA",
-        website: "https://johndoe.com",
         joinedDate: "January 2023",
     })
+    const [saving, setSaving] = useState(false);
+    const [error, setError] = useState(null);
+    const [avatarPreview, setAvatarPreview] = useState(null);
+    const { setUser, logout } = useAuth();
+    const navigate = useNavigate();
 
-    const handleSave = () => {
-        // Handle save logic
-        console.log("Saving profile data:", profileData)
-        setIsEditing(false)
-    }
+    useEffect(() => {
+        getCurrentUser().then(user => {
+            setProfileData(prev => ({
+                ...prev,
+                id: user.id || user._id || prev.id, // ensure id is set!
+                username: user.username || prev.username,
+                email: user.email || prev.email,
+                avatar: user.avatar || prev.avatar,
+                phone_number: user.phone_number || prev.phone_number,
+            }))
+        })
+    }, [])
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const updateData = {
+                username: profileData.username,
+                phone_number: profileData.phone_number,
+                avatar: profileData.avatar,
+                bio: profileData.bio,
+            };
+            const updated = await updateUser(profileData.id, updateData);
+            setProfileData(prev => ({
+                ...prev,
+                ...updated,
+            }));
+            setUser(updated);
+            setIsEditing(false);
+            setError(null);
+        } catch (err) {
+            setError("Failed to save profile.");
+            console.error(err);
+        } finally {
+            setSaving(false);
+        }
+    };
 
     const userStats = [
         { label: "Recipes", value: "12", color: "text-blue-600" },
@@ -142,6 +182,52 @@ export function UserProfile() {
         return <Badge className={colors[difficulty] || "bg-gray-100 text-gray-800"}>{difficulty}</Badge>
     }
 
+    const handleAvatarFileChange = (e) => {
+        const file = e.target.files[0];
+        setProfileData(prev => ({ ...prev, avatarFile: file }));
+        if (file) {
+            setAvatarPreview(URL.createObjectURL(file));
+        } else {
+            setAvatarPreview(null);
+        }
+    };
+
+    const handleAvatarUpload = async () => {
+        if (!profileData.avatarFile) return;
+        setSaving(true);
+        try {
+            console.log("Avatar file:", profileData.avatarFile);
+            console.log("User ID:", profileData.id);
+            // 1. Upload the file to Firebase Storage and get the download URL
+            const downloadURL = await uploadAvatarToFirebase(profileData.avatarFile, profileData.id);
+
+            // 2. Update the user's avatar in your backend (just the URL, not the file)
+            const updateData = {
+                avatar: downloadURL,
+                // Optionally include other fields you want to update:
+                // username: profileData.username,
+                // phone_number: profileData.phone_number,
+                // bio: profileData.bio,
+            };
+            const updated = await updateUser(profileData.id, updateData);
+
+            // 3. Update local state and context
+            setProfileData(prev => ({
+                ...prev,
+                avatar: updated.avatar,
+                avatarFile: undefined
+            }));
+            setUser(updated);
+            setAvatarPreview(null);
+            setError(null);
+        } catch (err) {
+            setError("Failed to upload avatar.");
+            console.error(err);
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return (
         <div className="min-h-screen bg-gray-50">
             {/* Header */}
@@ -164,9 +250,19 @@ export function UserProfile() {
                         <Button
                             onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
                             className={isEditing ? "bg-green-500 hover:bg-green-600" : "bg-orange-500 hover:bg-orange-600"}
+                            disabled={saving}
                         >
-                            {isEditing ? <Save className="h-4 w-4 mr-2" /> : <Edit className="h-4 w-4 mr-2" />}
-                            {isEditing ? "Save Changes" : "Edit Profile"}
+                            {isEditing ? (saving ? "Saving..." : "Save Changes") : "Edit Profile"}
+                        </Button>
+                        <Button
+                            variant="outline"
+                            className="ml-2"
+                            onClick={() => {
+                                logout();
+                                navigate('/login');
+                            }}
+                        >
+                            Log out
                         </Button>
                     </div>
                 </div>
@@ -181,8 +277,10 @@ export function UserProfile() {
                                 <div className="text-center">
                                     <div className="relative inline-block">
                                         <Avatar className="h-32 w-32 mx-auto">
-                                            <AvatarImage src={DEFAULT_FOOD_IMAGE} />
-                                            <AvatarFallback className="bg-orange-100 text-orange-600 text-3xl">JD</AvatarFallback>
+                                            <AvatarImage src={profileData.avatar || DEFAULT_FOOD_IMAGE} />
+                                            <AvatarFallback className="bg-orange-100 text-orange-600 text-3xl">
+                                                {profileData.username ? profileData.username.charAt(0).toUpperCase() : "U"}
+                                            </AvatarFallback>
                                         </Avatar>
                                         {isEditing && (
                                             <Button
@@ -198,21 +296,52 @@ export function UserProfile() {
                                         {isEditing ? (
                                             <div className="space-y-3">
                                                 <Input
-                                                    value={profileData.name}
-                                                    onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                                                    className="text-center font-semibold text-lg"
-                                                />
-                                                <Input
                                                     value={profileData.username}
-                                                    onChange={(e) => setProfileData({ ...profileData, username: e.target.value })}
-                                                    className="text-center"
+                                                    onChange={e => setProfileData({ ...profileData, username: e.target.value })}
+                                                    className="text-center font-semibold text-lg"
                                                     placeholder="@username"
                                                 />
+                                                <Input
+                                                    value={profileData.phone_number}
+                                                    onChange={e => setProfileData({ ...profileData, phone_number: e.target.value })}
+                                                    className="text-center"
+                                                    placeholder="Phone Number"
+                                                />
+                                                <Input
+                                                    value={profileData.avatar}
+                                                    onChange={e => setProfileData({ ...profileData, avatar: e.target.value })}
+                                                    className="text-center"
+                                                    placeholder="Avatar image URL"
+                                                />
+                                                <Textarea
+                                                    value={profileData.bio}
+                                                    onChange={e => setProfileData({ ...profileData, bio: e.target.value })}
+                                                    placeholder="Tell us about yourself..."
+                                                    className="min-h-[100px]"
+                                                    maxLength={300}
+                                                />
+                                                {/* Avatar upload UI hidden for now */}
+                                                {/*
+                                                <div className="flex flex-col items-center mt-2">
+                                                    <input
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleAvatarFileChange}
+                                                    />
+                                                    {avatarPreview && (
+                                                        <img src={avatarPreview} alt="Avatar Preview" className="h-20 w-20 rounded-full mt-2 object-cover" />
+                                                    )}
+                                                    <Button onClick={handleAvatarUpload} disabled={saving || !profileData.avatarFile} className="mt-2">
+                                                        Upload Avatar
+                                                    </Button>
+                                                </div>
+                                                */}
                                             </div>
                                         ) : (
                                             <>
-                                                <h1 className="text-2xl font-bold text-gray-900">{profileData.name}</h1>
-                                                <p className="text-gray-500 text-lg">@{profileData.username}</p>
+                                                <h1 className="text-2xl font-bold text-gray-900">{profileData.username}</h1>
+                                                <p className="text-gray-500 text-lg">{profileData.email}</p>
+                                                {profileData.phone_number && <p className="text-gray-500">{profileData.phone_number}</p>}
                                             </>
                                         )}
                                     </div>
@@ -241,32 +370,6 @@ export function UserProfile() {
                                         )}
 
                                         <div className="space-y-3 text-sm">
-                                            <div className="flex items-center text-gray-600">
-                                                <MapPin className="h-4 w-4 mr-3 text-orange-500" />
-                                                {isEditing ? (
-                                                    <Input
-                                                        value={profileData.location}
-                                                        onChange={(e) => setProfileData({ ...profileData, location: e.target.value })}
-                                                        className="h-8 flex-1"
-                                                    />
-                                                ) : (
-                                                    <span>{profileData.location}</span>
-                                                )}
-                                            </div>
-                                            <div className="flex items-center text-gray-600">
-                                                <Globe className="h-4 w-4 mr-3 text-orange-500" />
-                                                {isEditing ? (
-                                                    <Input
-                                                        value={profileData.website}
-                                                        onChange={(e) => setProfileData({ ...profileData, website: e.target.value })}
-                                                        className="h-8 flex-1"
-                                                    />
-                                                ) : (
-                                                    <a href={profileData.website} className="text-orange-500 hover:underline">
-                                                        {profileData.website}
-                                                    </a>
-                                                )}
-                                            </div>
                                             <div className="flex items-center text-gray-600">
                                                 <Calendar className="h-4 w-4 mr-3 text-orange-500" />
                                                 <span>Joined {profileData.joinedDate}</span>

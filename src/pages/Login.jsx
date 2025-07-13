@@ -8,6 +8,7 @@ import { Button } from "../components/ui/button"
 import { Checkbox } from "../components/ui/checkbox"
 import { login as loginApi } from '../api/auth'
 import { AUTH_STORAGE_KEY } from '../utils/auth'
+import { useAuth } from "../hooks/useAuth";
 
 export default function Login() {
     const navigate = useNavigate()
@@ -20,6 +21,8 @@ export default function Login() {
     const [showPassword, setShowPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [errors, setErrors] = useState({})
+
+    const { login } = useAuth();
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target
@@ -58,6 +61,7 @@ export default function Login() {
         setIsLoading(true)
         setErrors({})
         try {
+            await login(formData.email, formData.password)
             const data = await loginApi(formData.email, formData.password)
             console.log(data)
             // Store user and token in localStorage for AuthContext compatibility

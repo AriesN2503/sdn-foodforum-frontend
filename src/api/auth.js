@@ -1,13 +1,29 @@
 import axiosClient from './axiosClient'
 
-export const register = async (userData) => {
-    const response = await axiosClient.post('/auth/register', userData)
-    return response.data
+export const register = async (data) => {
+    try {
+        const response = await axiosClient.post('/auth/register', data)
+        return response.data
+    } catch (error) {
+        console.error('Register error:', error);
+        if (error.response) {
+            console.error('Register error response:', error.response.data);
+        }
+        throw error
+    }
 }
 
 export const login = async (email, password) => {
-    const response = await axiosClient.post('/auth/login', { email, password }, { withCredentials: true })
-    return response.data
+    try {
+        const response = await axiosClient.post('/auth/login', { email, password })
+        return response.data
+    } catch (error) {
+        console.error('Login error:', error);
+        if (error.response) {
+            console.error('Login error response:', error.response.data);
+        }
+        throw error
+    }
 }
 
 export const refreshToken = async () => {

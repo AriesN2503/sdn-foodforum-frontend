@@ -1,7 +1,8 @@
 "use client"
 
 import { createContext, useContext, useReducer, useEffect } from "react"
-import { getStoredAuth, storeAuth, clearAuth, mockLogin, mockRegister } from "../utils/auth"
+import { getStoredAuth, storeAuth, clearAuth } from "../utils/auth"
+import { login as loginApi, register as registerApi } from "../api/auth"
 
 const AuthContext = createContext()
 
@@ -15,7 +16,7 @@ const authReducer = (state, action) => {
         ...state,
         loading: false,
         user: action.payload.user,
-        token: action.payload.token,
+        token: action.payload.accessToken,
         isAuthenticated: true,
         error: null,
       }
@@ -70,8 +71,13 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     dispatch({ type: "LOGIN_START" })
     try {
-      const authData = await mockLogin(email, password)
-      storeAuth(authData)
+      const authData = await loginApi(email, password)
+      // Store the auth data in localStorage
+      const authToStore = {
+        user: authData.user,
+        token: authData.accessToken,
+      }
+      storeAuth(authToStore)
       dispatch({ type: "LOGIN_SUCCESS", payload: authData })
       return authData
     } catch (error) {
@@ -84,7 +90,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (username, email, password) => {
     dispatch({ type: "REGISTER_START" })
     try {
-      await mockRegister(username, email, password)
+      await registerApi({ username, email, password })
       dispatch({ type: "REGISTER_SUCCESS" })
       return { success: true }
     } catch (error) {
@@ -104,12 +110,21 @@ export const AuthProvider = ({ children }) => {
     dispatch({ type: "CLEAR_ERROR" })
   }
 
+  const setUser = (user) => {
+    dispatch({
+      type: "LOGIN_SUCCESS",
+      payload: { user, accessToken: state.token },
+    });
+    storeAuth({ user, token: state.token });
+  };
+
   const value = {
     ...state,
     login,
     register,
     logout,
     clearError,
+    setUser,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
