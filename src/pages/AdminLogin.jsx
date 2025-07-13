@@ -1,16 +1,17 @@
+import { Lock, User } from "lucide-react"
 import { useState } from "react"
+import toast from "react-hot-toast"
 import { useNavigate } from "react-router"
-import { User, Lock } from "lucide-react"
-import { AuthLayout } from "../layout/AuthLayout"
-import { Label } from "../components/ui/label"
-import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+import { Input } from "../components/ui/input"
+import { Label } from "../components/ui/label"
+import { AuthLayout } from "../layout/AuthLayout"
 
 export default function AdminLogin() {
     const navigate = useNavigate()
     const [formData, setFormData] = useState({
-        username: "",
+        email: "",
         password: "",
     })
 
@@ -27,7 +28,7 @@ export default function AdminLogin() {
 
     const validateForm = () => {
         const newErrors = {}
-        if (!formData.username) newErrors.username = "Username is required"
+        if (!formData.email) newErrors.email = "Email is required"
         if (!formData.password) newErrors.password = "Password is required"
         setErrors(newErrors)
         return Object.keys(newErrors).length === 0
@@ -39,13 +40,15 @@ export default function AdminLogin() {
 
         setIsLoading(true)
         try {
-            //TODO
-            console.log("Go to admin page")
-            navigate('/admin')
+            console.log(formData)
+            // const res = await login(formData.email, formData.password)
+            // console.log(res)
+            navigate('/')
+            toast.success("Login successful!")
         } catch (err) {
-            setErrors({
-                general: err?.response?.data?.error || "Invalid admin credentials",
-            })
+            const message = err?.response?.data?.error || "Invalid admin credentials"
+            setErrors({ general: message })
+            toast.error(message)
         } finally {
             setIsLoading(false)
         }
@@ -65,23 +68,23 @@ export default function AdminLogin() {
                             </div>
                         )}
 
-                        {/* Username */}
+                        {/* Email */}
                         <div className="space-y-1">
-                            <Label htmlFor="username">Username</Label>
+                            <Label htmlFor="email">Email</Label>
                             <div className="relative">
                                 <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
                                 <Input
-                                    id="username"
-                                    name="username"
-                                    type="text"
-                                    value={formData.username}
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    value={formData.email}
                                     onChange={handleInputChange}
-                                    placeholder="Enter admin username"
+                                    placeholder="Enter admin email"
                                     className="pl-10"
                                 />
                             </div>
-                            {errors.username && (
-                                <p className="text-sm text-red-600">{errors.username}</p>
+                            {errors.email && (
+                                <p className="text-sm text-red-600">{errors.email}</p>
                             )}
                         </div>
 
