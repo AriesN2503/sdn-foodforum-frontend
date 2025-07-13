@@ -37,5 +37,14 @@ export async function uploadFileToCloudinary(file) {
         throw new Error(data.error?.message || 'Upload file to Cloudinary failed');
     }
 
-    return data.secure_url; // URL file đã upload
+    return {
+        url: data.secure_url,
+        original_filename: data.original_filename,
+        display_name: data.display_name,
+        bytes: data.bytes,
+        resource_type: data.resource_type,
+        public_id: data.public_id,
+        format: data.format,
+        ...data
+    };
 } 

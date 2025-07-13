@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { uploadImageToCloudinary, uploadFileToCloudinary } from '../../api/cloudinary';
 
 const ChatInput = ({ onSendMessage, isTyping = false, onTyping, replyingMessage, onCancelReply }) => {
   const [message, setMessage] = useState('');
@@ -20,7 +21,8 @@ const ChatInput = ({ onSendMessage, isTyping = false, onTyping, replyingMessage,
       onSendMessage({
         type: 'text',
         content: message.trim(),
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        ...(replyingMessage && (replyingMessage._id || replyingMessage.id) ? { replyTo: replyingMessage._id || replyingMessage.id } : {})
       });
       setMessage('');
     }
@@ -33,37 +35,57 @@ const ChatInput = ({ onSendMessage, isTyping = false, onTyping, replyingMessage,
     }
   };
 
-  const handleFileUpload = (event) => {
+  const handleFileUpload = async (event) => {
     const file = event.target.files[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
+      try {
+        const fileResult = await uploadFileToCloudinary(file);
+        const fileName = fileResult.display_name || fileResult.original_filename || file.name;
         onSendMessage({
           type: 'file',
-          content: e.target.result,
-          fileName: file.name,
-          fileSize: formatFileSize(file.size),
-          timestamp: new Date().toISOString()
+          content: fileName,
+          attachments: [
+            {
+              type: 'file',
+              url: fileResult.url,
+              filename: fileName,
+              size: fileResult.bytes || file.size,
+              mimeType: file.type || fileResult.mimeType || ''
+            }
+          ],
+          timestamp: new Date().toISOString(),
+          ...(replyingMessage && (replyingMessage._id || replyingMessage.id) ? { replyTo: replyingMessage._id || replyingMessage.id } : {})
         });
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        alert('Không thể upload file lên Cloudinary');
+      }
     }
     setIsAttaching(false);
   };
 
-  const handleImageUpload = (event) => {
+  const handleImageUpload = async (event) => {
     const file = event.target.files[0];
     if (file && file.type.startsWith('image/')) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
+      try {
+        const imageUrl = await uploadImageToCloudinary(file);
         onSendMessage({
           type: 'image',
-          content: e.target.result,
-          fileName: file.name,
-          timestamp: new Date().toISOString()
+          content: file.name ? `Đã gửi ảnh: ${file.name}` : 'Đã gửi ảnh',
+          attachments: [
+            {
+              type: 'image',
+              url: imageUrl,
+              filename: file.name,
+              size: file.size,
+              mimeType: file.type
+            }
+          ],
+          timestamp: new Date().toISOString(),
+          ...(replyingMessage && (replyingMessage._id || replyingMessage.id) ? { replyTo: replyingMessage._id || replyingMessage.id } : {})
         });
-      };
-      reader.readAsDataURL(file);
+      } catch (err) {
+        alert('Không thể upload ảnh lên Cloudinary');
+      }
     }
     setIsAttaching(false);
   };

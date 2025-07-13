@@ -105,19 +105,53 @@ const ChatMessage = ({ message, isOwn, showAvatar, showTime, formatTime, onEdit,
                     >
                         {/* Reply preview */}
                         {message.replyTo && (
-                            <div className="mb-1 px-3 py-2 rounded bg-gray-100 text-gray-800 border-l-4 border-blue-400 text-sm">
-                                <span className="font-semibold">{message.replyTo.senderName}:</span> {message.replyTo.content}
-                            </div>
+                          <div className="mb-1 px-3 py-2 rounded bg-gray-100 text-gray-800 border-l-4 border-blue-400 text-sm max-w-xs">
+                            <span className="font-semibold">{message.replyTo.senderName}:</span>{' '}
+                            {Array.isArray(message.replyTo.attachments) && message.replyTo.attachments.length > 0 ? (
+                              <span className="flex gap-2 items-center mt-1">
+                                {message.replyTo.attachments.map((att, idx) =>
+                                  att.type === 'image' ? (
+                                    <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer">
+                                      <img
+                                        src={att.url}
+                                        alt={att.filename || 'image'}
+                                        className="inline-block w-12 h-12 object-cover rounded border border-gray-200 shadow-sm mr-2"
+                                      />
+                                    </a>
+                                  ) : (
+                                    <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
+                                      {att.filename || att.url}
+                                    </a>
+                                  )
+                                )}
+                              </span>
+                            ) : message.replyTo.type === 'image' && message.replyTo.attachments && message.replyTo.attachments.length === 0 && message.replyTo.content ? (
+                              // Trường hợp cũ: type là image nhưng không có attachments, fallback về content nếu là link ảnh
+                              <img src={message.replyTo.content} alt="image" className="inline-block w-12 h-12 object-cover rounded border border-gray-200 shadow-sm mr-2" />
+                            ) : (
+                              <span className="truncate">{message.replyTo.content}</span>
+                            )}
+                          </div>
                         )}
                         {/* Nội dung tin nhắn */}
-                        {message.type === 'image' ? (
-                            <a href={message.content} target="_blank" rel="noopener noreferrer">
-                                <img
-                                    src={message.content}
-                                    alt={message.fileName || 'image'}
+                        {Array.isArray(message.attachments) && message.attachments.length > 0 ? (
+                          <div className="flex flex-col gap-2">
+                            {message.attachments.map((att, idx) =>
+                              att.type === 'image' ? (
+                                <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer">
+                                  <img
+                                    src={att.url}
+                                    alt={att.filename || 'image'}
                                     className="max-w-xs max-h-60 rounded-lg border border-gray-200 shadow-sm cursor-pointer hover:opacity-90 transition"
-                                />
-                            </a>
+                                  />
+                                </a>
+                              ) : (
+                                <a key={idx} href={att.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline break-all">
+                                  {att.filename || att.url}
+                                </a>
+                              )
+                            )}
+                          </div>
                         ) : (
                             <p className="text-sm whitespace-pre-wrap break-words">{message.content}</p>
                         )}
