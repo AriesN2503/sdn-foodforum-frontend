@@ -8,6 +8,7 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { AuthLayout } from "../layout/AuthLayout"
 import { useToast } from "../context/ToastContext"
+import { login } from "../api/auth"
 
 export default function AdminLogin() {
     const navigate = useNavigate()
@@ -43,9 +44,9 @@ export default function AdminLogin() {
         setIsLoading(true)
         try {
             console.log(formData)
-            // const res = await login(formData.email, formData.password)
-            // console.log(res)
-            navigate('/')
+            const res = await login(formData.email, formData.password)
+            console.log(res)
+            navigate('/admin')
             showToast("Login successful", { type: "success", duration: 3000 })
         } catch (err) {
             const message = err?.response?.data?.error || "Invalid admin credentials"
