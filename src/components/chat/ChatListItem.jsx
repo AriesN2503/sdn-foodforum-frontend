@@ -54,7 +54,8 @@ const ChatListItem = ({ chat, isSelected, onClick, currentUserId }) => {
       p => (p.user?._id || p.user) !== currentUserId
     );
   }
-  const displayName = recipient?.user?.username || recipient?.user?.name || chat.name || 'Không xác định';
+
+  const displayName = recipient?.user?.username || 'Không xác định';
   const avatarUrl = recipient?.user?.profilePicture || chat.avatar;
 
   return (

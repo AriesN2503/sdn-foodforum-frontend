@@ -12,18 +12,16 @@ const ChatList = ({
   onStartNewChat, // thêm prop này
   onShowActive,
   onShowArchived,
-  currentTab = 'active' // 'active' hoặc 'archived'
+  currentTab = 'active', // 'active' hoặc 'archived',
+  currentUserId
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { user } = useContext(AuthContext);
-  const currentUserId = user?._id;
 
   const handleSearch = (e) => {
     const query = e.target.value;
     setSearchQuery(query);
     onSearch?.(query);
   };
-  console.log(chats)
 
   const filteredChats = chats;
 

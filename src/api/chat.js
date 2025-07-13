@@ -26,6 +26,6 @@ export function sendMessage({ conversationId, content, type = 'text', replyTo })
 }
 
 // Tạo hội thoại mới với một user (đúng schema participants)
-export function createConversation(userId) {
-    return axiosClient.post('/conversations', { participantId: userId });
+export function createConversation(userId, firstMessage) {
+    return axiosClient.post('/conversations', { participantId: userId, firstMessage });
 }

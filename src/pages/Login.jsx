@@ -8,6 +8,7 @@ import { Button } from "../components/ui/button"
 import { Checkbox } from "../components/ui/checkbox"
 import { login as loginApi } from '../api/auth'
 import { AUTH_STORAGE_KEY } from '../utils/auth'
+import { jwtDecode } from 'jwt-decode';
 
 export default function Login() {
     const navigate = useNavigate()
@@ -59,12 +60,21 @@ export default function Login() {
         setErrors({})
         try {
             const data = await loginApi(formData.email, formData.password)
-            console.log(data)
+            // Decode JWT để lấy thông tin user
+            let user = data.user || {};
+            if (data.accessToken) {
+                try {
+                    const decoded = jwtDecode(data.accessToken);
+                    user = { ...user, ...decoded };
+                } catch (err) {
+                    console.error('JWT decode error:', err);
+                }
+            }
             // Store user and token in localStorage for AuthContext compatibility
             localStorage.setItem(
                 AUTH_STORAGE_KEY,
                 JSON.stringify({
-                    user: data.user || {},
+                    user,
                     token: data.accessToken,
                 })
             )
