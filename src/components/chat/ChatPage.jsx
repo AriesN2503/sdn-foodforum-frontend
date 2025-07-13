@@ -208,19 +208,22 @@ const ChatPage = () => {
                 ...messageData,
                 conversationId: selectedChat.id || selectedChat._id,
                 tempId,
+                status: 'sending',
             };
-            setMessages(prev => [...prev, { ...msg, status: 'sending' }]);
+            setMessages(prev => [...prev, msg]); // Optimistic update
             socket.emit('message:send', msg, (response) => {
                 if (!response.success) {
                     setMessages(prev => prev.filter(m => m.tempId !== tempId));
                     showErrorToast('Không thể gửi tin nhắn');
                     return;
                 }
+                // Khi nhận socket event sẽ tự động cập nhật lại tin nhắn này
             });
             setReplyingMessage(null);
         } else if (selectedChat) {
             try {
                 setIsLoadingMessages(true);
+                setMessages(prev => [...prev, { ...messageData, conversationId: selectedChat.id || selectedChat._id, status: 'sending', tempId: Date.now().toString() }]); // Optimistic update
                 await sendMessageApi({
                     conversationId: selectedChat.id || selectedChat._id,
                     content: messageData.content,

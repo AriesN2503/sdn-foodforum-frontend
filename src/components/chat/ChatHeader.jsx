@@ -18,7 +18,6 @@ const ChatHeader = React.memo(({
   chat, 
   onDeleteChat, 
   onArchiveChat, 
-  onSearch,
   onViewProfile,
   currentUserId,
   isLoading = false,
@@ -40,12 +39,6 @@ const ChatHeader = React.memo(({
     }, [onArchiveChat, chat]);
 
     
-
-    const handleSearch = useCallback(() => {
-        if (onSearch) {
-            onSearch(chat);
-        }
-    }, [onSearch, chat]);
 
     const handleViewProfile = useCallback(() => {
         if (onViewProfile && chatInfo.userId) {
@@ -114,19 +107,6 @@ const ChatHeader = React.memo(({
 
             <div className="flex items-center gap-1 flex-shrink-0">
                 {/* Action buttons */}
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleSearch}
-                    className="h-8 w-8 p-0"
-                    title="Tìm kiếm tin nhắn"
-                    aria-label="Tìm kiếm tin nhắn"
-                >
-                    <Search className="h-4 w-4" />
-                </Button>
-
-                
-
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button
@@ -140,10 +120,7 @@ const ChatHeader = React.memo(({
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="w-48">
-                        <DropdownMenuItem onClick={handleSearch}>
-                            <Search className="mr-2 h-4 w-4" />
-                            Tìm kiếm tin nhắn
-                        </DropdownMenuItem>
+                        {/* Đã xóa menu item Tìm kiếm tin nhắn */}
                         {!chatInfo.isGroupChat && onViewProfile && (
                             <DropdownMenuItem onClick={handleViewProfile}>
                                 <Users className="mr-2 h-4 w-4" />
@@ -151,10 +128,17 @@ const ChatHeader = React.memo(({
                             </DropdownMenuItem>
                         )}
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={handleArchiveChat}>
-                            <Archive className="mr-2 h-4 w-4" />
-                            Lưu trữ hội thoại
-                        </DropdownMenuItem>
+                        {chat?.isActive !== false ? (
+                            <DropdownMenuItem onClick={handleArchiveChat}>
+                                <Archive className="mr-2 h-4 w-4" />
+                                Lưu trữ hội thoại
+                            </DropdownMenuItem>
+                        ) : (
+                            <DropdownMenuItem onClick={() => onArchiveChat && onArchiveChat(chat, true)}>
+                                <Archive className="mr-2 h-4 w-4" />
+                                Khôi phục hội thoại
+                            </DropdownMenuItem>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem
                             onClick={handleDeleteChat}
@@ -195,7 +179,6 @@ ChatHeader.propTypes = {
     }),
     onDeleteChat: PropTypes.func,
     onArchiveChat: PropTypes.func,
-      onSearch: PropTypes.func,
     onViewProfile: PropTypes.func,
     currentUserId: PropTypes.string,
     isLoading: PropTypes.bool,
