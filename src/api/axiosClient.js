@@ -13,10 +13,11 @@ axiosClient.interceptors.request.use((config) => {
     } else if (token) {
         config.headers["Authorization"] = `Bearer ${token}`
     }
-    return config
-},
-    (error) => Promise.reject(error)
-)
+    if (token) {
+        config.headers["Authorization"] = `Bearer ${token}`;
+    }
+    return config;
+});
 
 axiosClient.interceptors.response.use(
     (response) => response,

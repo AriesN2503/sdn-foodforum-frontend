@@ -9,14 +9,16 @@ import ModeratorDashboard from "../pages/ModeratorDashboard"
 import AdminDashboard from "../pages/AdminDashboard"
 import { UserProfile } from "../pages/UserProfile"
 import Chat from "../pages/Chat"
+import NotFound from "../pages/NotFound"
+import AdminLogin from "../pages/AdminLogin"
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<MainLayout />}>
         <Route index element={<Home />} />
-        <Route path="post/:id" element={<PostDetail />} />
       </Route>
+      <Route path="post/:id" element={<PostDetail />} />
       <Route
         path="moderator"
         element={
@@ -40,15 +42,15 @@ const AppRoutes = () => {
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
       <Route path='profile' element={<UserProfile />} />
-      <Route 
-        path="chat" 
+      <Route
+        path="chat"
         element={
-        //   <ProtectedRoute requiredRole="user">
-        //     <Chat />
-        //   </ProtectedRoute>
           <Chat />
-        } 
+        }
       />
+      <Route path='admin/login' element={<AdminLogin />} />
+
+      <Route path='*' element={<NotFound />} />
     </Routes>
   )
 }
