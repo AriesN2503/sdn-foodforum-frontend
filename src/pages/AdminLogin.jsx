@@ -45,7 +45,7 @@ export default function AdminLogin() {
             console.log(formData)
             // const res = await login(formData.email, formData.password)
             // console.log(res)
-            navigate('/')
+            navigate('/admin')
             showToast("Login successful", { type: "success", duration: 3000 })
         } catch (err) {
             const message = err?.response?.data?.error || "Invalid admin credentials"
