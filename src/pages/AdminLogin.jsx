@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { AuthLayout } from "../layout/AuthLayout"
+import { useToast } from "../context/ToastContext"
 
 export default function AdminLogin() {
     const navigate = useNavigate()
@@ -17,6 +18,7 @@ export default function AdminLogin() {
 
     const [isLoading, setIsLoading] = useState(false)
     const [errors, setErrors] = useState({})
+    const { showToast } = useToast()
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -44,7 +46,7 @@ export default function AdminLogin() {
             // const res = await login(formData.email, formData.password)
             // console.log(res)
             navigate('/')
-            toast.success("Login successful!")
+            showToast("Login successful", { type: "success", duration: 3000 })
         } catch (err) {
             const message = err?.response?.data?.error || "Invalid admin credentials"
             setErrors({ general: message })
