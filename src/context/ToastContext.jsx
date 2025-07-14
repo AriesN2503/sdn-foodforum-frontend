@@ -3,7 +3,7 @@ import * as RadixToast from "@radix-ui/react-toast";
 import ToastItem from "../components/ui/ToastItem";
 
 // Context để quản lý toast
-const ToastContext = createContext();
+export const ToastContext = createContext();
 
 // Custom hook để sử dụng toast
 export function useToast() {
@@ -30,9 +30,9 @@ export function ToastProvider({ children }) {
     // Remove toast from DOM after animation
     const handleOpenChange = (id, open) => {
         if (!open) {
-        setTimeout(() => {
-            setToasts((prev) => prev.filter((t) => t.id !== id)); 
-        }, 200);
+            setTimeout(() => {
+                setToasts((prev) => prev.filter((t) => t.id !== id));
+            }, 200);
         }
     };
 

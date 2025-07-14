@@ -1,4 +1,4 @@
-import { Search, ChefHat, Coffee, MessageCircle, User as UserIcon } from "lucide-react"
+import { Search, ChefHat, Coffee, MessageCircle, User as UserIcon, Plus } from "lucide-react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Link } from "react-router"
@@ -34,19 +34,27 @@ export default function Header() {
             <MessageCircle className="h-6 w-6 text-orange-500" />
           </Link>
           {isAuthenticated && user ? (
-            <Link to="/profile">
-              <Avatar className="h-9 w-9 cursor-pointer">
-                {user.avatar ? (
-                  <AvatarImage src={user.avatar} />
-                ) : (
-                  <AvatarFallback className="bg-orange-100 text-orange-600">
-                    {user.username
-                      ? user.username.slice(0, 2).toUpperCase()
-                      : <UserIcon className="h-5 w-5 text-orange-500" />}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-            </Link>
+            <>
+              <Link to="/create-post">
+                <Button className="bg-orange-500 hover:bg-orange-600 text-white">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Create Post
+                </Button>
+              </Link>
+              <Link to="/profile">
+                <Avatar className="h-9 w-9 cursor-pointer">
+                  {user.avatar ? (
+                    <AvatarImage src={user.avatar} />
+                  ) : (
+                    <AvatarFallback className="bg-orange-100 text-orange-600">
+                      {user.username
+                        ? user.username.slice(0, 2).toUpperCase()
+                        : <UserIcon className="h-5 w-5 text-orange-500" />}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+              </Link>
+            </>
           ) : (
             <Link to='login'>
               <Button variant="default" className="bg-orange-500 hover:bg-orange-600 cursor-pointer">

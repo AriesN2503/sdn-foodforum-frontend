@@ -11,7 +11,8 @@ export function PostCard({
   timestamp,
   votes,
   commentCount,
-  imageUrl,
+  imageUrl, // Keep for backward compatibility
+  images, // New images array
   onCommentClick,
 }) {
   const navigate = useNavigate()
@@ -21,7 +22,7 @@ export function PostCard({
   }
 
   const handleCommentClick = (e) => {
-    e.stopPropagation() 
+    e.stopPropagation()
     onCommentClick(id)
   }
 
@@ -56,11 +57,11 @@ export function PostCard({
           <h3 className="text-xl font-semibold text-gray-800 mb-4 hover:text-orange-600 transition-colors">
             {title}
           </h3>
-          {imageUrl && (
+          {(imageUrl || (images && images.length > 0)) && (
             <div className="mb-4">
               <img
-                src={imageUrl}
-                alt="Recipe of the day"
+                src={images && images.length > 0 ? images[0].url : imageUrl}
+                alt="Post image"
                 width={200}
                 height={120}
                 className="rounded-lg object-cover w-full h-[400px]"
