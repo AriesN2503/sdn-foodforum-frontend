@@ -27,6 +27,21 @@ export const getCurrentUser = async () => {
     return response.data
 }
 
+export const getUserFavoritePosts = async () => {
+    const response = await axiosClient.get('/users/me/favorites')
+    return response.data
+}
+
+export const addToFavorites = async (postId) => {
+    const response = await axiosClient.post(`/users/me/favorites/${postId}`)
+    return response.data
+}
+
+export const removeFromFavorites = async (postId) => {
+    const response = await axiosClient.delete(`/users/me/favorites/${postId}`)
+    return response.data
+}
+
 export async function uploadAvatarToFirebase(file, userId) {
     if (!file || !userId) throw new Error('File and userId are required');
     const avatarRef = ref(storage, `avatars/${userId}/${file.name}`);

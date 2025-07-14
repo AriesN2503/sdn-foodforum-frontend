@@ -1,20 +1,20 @@
 import * as RadixToast from "@radix-ui/react-toast";
 import { cva } from "class-variance-authority";
-import { cn } from "@/src/lib/utils";
+import { cn } from "../../lib/utils";
 
 const toastVariants = cva(
     "bg-white border-l-4 rounded-xl shadow-md px-6 py-4 flex items-center gap-4 min-w-[320px] max-w-md",
     {
         variants: {
-        variant: {
-            success: "border-green-500",
-            error: "border-red-500",
-            info: "border-blue-500",
-            warning: "border-yellow-500",
-        },
+            variant: {
+                success: "border-green-500",
+                error: "border-red-500",
+                info: "border-blue-500",
+                warning: "border-yellow-500",
+            },
         },
         defaultVariants: {
-        variant: "info",
+            variant: "info",
         },
     }
 );
@@ -51,7 +51,7 @@ export default function ToastItem({
             <div className="flex-1 text-gray-800 text-base font-semibold flex items-center">
                 {message}
             </div>
-            
+
             <RadixToast.Action asChild altText="Đóng">
                 <button
                     onClick={onClose}
