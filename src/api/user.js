@@ -27,6 +27,11 @@ export const getCurrentUser = async () => {
     return response.data
 }
 
+export const updateUserStatus = async (id, status) => {
+    const response = await axiosClient.patch(`/users/${id}/status`, { status });
+    return response.data;
+}
+
 export async function uploadAvatarToFirebase(file, userId) {
     if (!file || !userId) throw new Error('File and userId are required');
     const avatarRef = ref(storage, `avatars/${userId}/${file.name}`);

@@ -1,29 +1,34 @@
 import { useEffect, useState } from "react"
-import { Card, CardContent } from "../components/ui/card"
-import { Button } from "../components/ui/button"
-import { Badge } from "../components/ui/badge"
-import { Input } from "../components/ui/input"
-import { Textarea } from "../components/ui/textarea"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
+import { Card, CardContent } from "../ui/card"
+import { Button } from "../ui/button"
+import { Badge } from "../ui/badge"
+import { Input } from "../ui/input"
+import { Textarea } from "../ui/textarea"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../ui/dropdown-menu"
 import { MoreHorizontal, Edit, Trash2, Plus } from "lucide-react"
-import { getPosts, deletePost, updatePost } from "../api/post"
-import { useToast } from "../context/ToastContext"
+import { getPosts, deletePost, updatePost } from "../../api/post"
+import { useToast } from "../../context/ToastContext"
+import CreatePostForm from "../post/CreatePostForm";
+import ConfirmationModal from "./ConfirmationModal";
 
 export default function PostManagement() {
     const [posts, setPosts] = useState([])
     const [editingPost, setEditingPost] = useState(null)
     const [deletingPost, setDeletingPost] = useState(null)
+    const [showCreateModal, setShowCreateModal] = useState(false)
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
     const { showToast } = useToast()
 
-    useEffect(() => {
-        const fetchPostData = async () => {
-            try {
-                const res = await getPosts()
-                setPosts(res.data || res)
-            } catch (err) {
-                console.error("Failed to fetch posts", err)
-            }
+    const fetchPostData = async () => {
+        try {
+            const res = await getPosts()
+            setPosts(res.data || res)
+        } catch (err) {
+            console.error("Failed to fetch posts", err)
         }
+    }
+
+    useEffect(() => {
         fetchPostData()
     }, [])
 
@@ -38,6 +43,7 @@ export default function PostManagement() {
             showToast("Failed to delete post.", { type: "error" })
         } finally {
             setDeletingPost(null)
+            setShowDeleteModal(false)
         }
     }
 
@@ -58,7 +64,7 @@ export default function PostManagement() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Posts Management</h2>
-                <Button className="bg-orange-500 hover:bg-orange-600">
+                <Button className="bg-orange-500 hover:bg-orange-600" onClick={() => setShowCreateModal(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create Post
                 </Button>
@@ -89,7 +95,7 @@ export default function PostManagement() {
                                     </DropdownMenuTrigger>
                                     <DropdownMenuContent>
                                         <DropdownMenuItem onClick={() => setEditingPost(post)}><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                                        <DropdownMenuItem onClick={() => setDeletingPost(post)}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
+                                        <DropdownMenuItem onClick={() => { setDeletingPost(post); setShowDeleteModal(true); }}><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
                                     </DropdownMenuContent>
                                 </DropdownMenu>
                             </div>
@@ -122,21 +128,26 @@ export default function PostManagement() {
                     </div>
                 </div>
             )}
-            {deletingPost && (
+            <ConfirmationModal
+                open={showDeleteModal && !!deletingPost}
+                title="Confirm Deletion"
+                message={deletingPost ? `Are you sure you want to delete post '${deletingPost.title}'? This action cannot be undone.` : ''}
+                onConfirm={handleDeletePost}
+                onCancel={() => { setShowDeleteModal(false); setDeletingPost(null); }}
+                confirmText="Delete"
+                cancelText="Cancel"
+            />
+            {showCreateModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg w-full max-w-md space-y-4">
-                        <h2 className="text-xl font-semibold text-red-600">Confirm Deletion</h2>
-                        <p>Are you sure you want to delete post <strong>{deletingPost.title}</strong>? This action cannot be undone.</p>
-                        <div className="flex justify-end space-x-2">
-                            <Button variant="outline" onClick={() => setDeletingPost(null)}>
-                                Cancel
-                            </Button>
-                            <Button
-                                className="bg-red-500 hover:bg-red-600 text-white"
-                                onClick={handleDeletePost}
-                            >
-                                Confirm Delete
-                            </Button>
+                    <div className="bg-white p-6 rounded-lg w-full max-w-lg">
+                        <CreatePostForm
+                            onSuccess={async () => {
+                                setShowCreateModal(false);
+                                await fetchPostData();
+                            }}
+                        />
+                        <div className="flex justify-end mt-4">
+                            <Button variant="outline" onClick={() => setShowCreateModal(false)}>Cancel</Button>
                         </div>
                     </div>
                 </div>
