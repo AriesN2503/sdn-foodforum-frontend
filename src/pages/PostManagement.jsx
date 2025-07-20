@@ -28,6 +28,7 @@ export default function PostManagement() {
     }, [])
 
     const handleDeletePost = async () => {
+        if (!deletingPost) return;
         try {
             await deletePost(deletingPost._id || deletingPost.id)
             setPosts((prev) => prev.filter(p => (p._id || p.id) !== (deletingPost._id || deletingPost.id)))
@@ -41,6 +42,7 @@ export default function PostManagement() {
     }
 
     const handleSaveEditPost = async () => {
+        if (!editingPost) return;
         try {
             const updated = await updatePost(editingPost._id || editingPost.id, editingPost)
             setPosts(prev => prev.map(post => (post._id === updated._id ? updated : post)))

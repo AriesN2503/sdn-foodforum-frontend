@@ -73,6 +73,7 @@ export default function AdminDashboard() {
 
 
     const handleDeleteUser = async () => {
+        if (!deletingUser) return;
         try {
             await deleteUser(deletingUser._id);
             setUsers((prev) => prev.filter(u => u._id !== deletingUser._id));
@@ -87,6 +88,7 @@ export default function AdminDashboard() {
 
 
     const handleSaveEdit = async () => {
+        if (!editingUser) return;
         try {
             const updatedUserData = {
                 username: editingUser.username,
