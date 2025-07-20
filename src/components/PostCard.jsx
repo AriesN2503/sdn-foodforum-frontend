@@ -21,7 +21,7 @@ export function PostCard({
   }
 
   const handleCommentClick = (e) => {
-    e.stopPropagation() 
+    e.stopPropagation()
     onCommentClick(id)
   }
 
@@ -50,7 +50,7 @@ export function PostCard({
         <div className="flex-1 cursor-pointer" onClick={handlePostClick}>
           <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
             <span className="text-orange-500">{subreddit}</span>
-            <span>Posted by {author.username}</span>
+            <span>Posted by {author?.username || "Anonymous"}</span>
             <span>{timestamp}</span>
           </div>
           <h3 className="text-xl font-semibold text-gray-800 mb-4 hover:text-orange-600 transition-colors">

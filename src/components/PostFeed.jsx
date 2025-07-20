@@ -17,8 +17,8 @@ export function PostFeed({ posts, onCommentClick, activeBadge, onBadgeChange }) 
                   key={badge}
                   onClick={() => onBadgeChange(badge)}
                   className={`cursor-pointer ${activeBadge === badge
-                      ? "bg-orange-500 text-white hover:bg-orange-600"
-                      : "bg-transparent text-orange-500 border-orange-500 hover:bg-orange-50"
+                    ? "bg-orange-500 text-white hover:bg-orange-600"
+                    : "bg-transparent text-orange-500 border-orange-500 hover:bg-orange-50"
                     }`}
                   variant={activeBadge === badge ? "default" : "outline"}
                 >
@@ -28,8 +28,8 @@ export function PostFeed({ posts, onCommentClick, activeBadge, onBadgeChange }) 
             </div>
           </div>
           <div className="space-y-6">
-            {posts.map((post) => (
-              <PostCard key={post.id} {...post} onCommentClick={onCommentClick} />
+            {posts.map((post, idx) => (
+              <PostCard key={post.id || post._id || idx} {...post} onCommentClick={onCommentClick} />
             ))}
             {posts.length === 0 && (
               <p className="text-gray-500 italic text-sm text-center">No posts in this category yet.</p>

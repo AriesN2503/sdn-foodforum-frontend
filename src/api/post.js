@@ -28,7 +28,22 @@ export const updatePost = (id, data) => {
   });
 };
 
-// Xóa bài post
+// Xóa bài post (soft delete)
 export const deletePost = (id) => {
   return axiosClient.delete(`/posts/${id}`);
+};
+
+// Lấy bài post theo user
+export const getPostsByUser = (userId) => {
+  return axiosClient.get(`/posts/user/${userId}`);
+};
+
+// Tăng view cho bài post
+export const increaseView = (id) => {
+  return axiosClient.post(`/posts/${id}/view`);
+};
+
+// Lấy bài post theo tag
+export const getPostsByTag = (tag) => {
+  return axiosClient.get(`/posts/tag/${tag}`);
 }; 

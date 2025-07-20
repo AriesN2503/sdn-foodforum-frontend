@@ -5,8 +5,10 @@ import { useAuth } from "../hooks/useAuth"
 import { checkRole } from "../utils/auth"
 
 const ProtectedRoute = ({ children, requiredRole = null }) => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const location = useLocation();
+
+  if (loading) return null; // or a spinner
 
   // Xác định đã đăng nhập hay chưa
   const isAuthenticated = !!user;

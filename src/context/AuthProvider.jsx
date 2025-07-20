@@ -4,6 +4,7 @@ import { AuthContext } from "./AuthContext"
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const stored = localStorage.getItem("foodforum_auth")
@@ -12,6 +13,7 @@ export const AuthProvider = ({ children }) => {
       setToken(token)
       setUser(user)
     }
+    setLoading(false)
   }, [])
 
   const login = (token, user) => {
@@ -25,6 +27,8 @@ export const AuthProvider = ({ children }) => {
     setUser(null)
     localStorage.removeItem("foodforum_auth")
   }
+
+  if (loading) return null // or a spinner
 
   return (
     <AuthContext.Provider value={{ token, user, login, logout }}>

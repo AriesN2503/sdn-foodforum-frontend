@@ -32,6 +32,7 @@ import {
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
 import { deleteUser, getUsers, updateUser } from "../api/user"
+import PostManagement from "./PostManagement"
 import { useToast } from "../context/ToastContext"
 
 export default function AdminDashboard() {
@@ -67,7 +68,6 @@ export default function AdminDashboard() {
                 console.error("Failed to fetch users", err)
             }
         }
-
         fetchUserData()
     }, [])
 
@@ -109,26 +109,6 @@ export default function AdminDashboard() {
             }
         }
     };
-
-
-
-
-    // Recipes Data
-    // const recipes = [
-    //     { id: 1, title: "Spicy Korean Ramen", author: "Mike Chen", category: "Asian", status: "approved", likes: 45, createdAt: "2024-01-10" },
-    //     { id: 2, title: "Vegan Chocolate Cake", author: "Emma Wilson", category: "Desserts", status: "pending", likes: 12, createdAt: "2024-01-09" },
-    //     { id: 3, title: "Mediterranean Pasta", author: "Alex Thompson", category: "Italian", status: "approved", likes: 67, createdAt: "2024-01-08" },
-    //     { id: 4, title: "Thai Green Curry", author: "Sarah Johnson", category: "Thai", status: "rejected", likes: 23, createdAt: "2024-01-07" },
-    //     { id: 5, title: "Classic Beef Burger", author: "David Kim", category: "American", status: "approved", likes: 89, createdAt: "2024-01-06" },
-    // ]
-
-    // Posts Data
-    const posts = [
-        { id: 1, title: "Best cooking tips for beginners", author: "Sarah Johnson", category: "Tips", comments: 12, likes: 34, createdAt: "2024-01-10" },
-        { id: 2, title: "Kitchen equipment recommendations", author: "Mike Chen", category: "Equipment", comments: 8, likes: 23, createdAt: "2024-01-09" },
-        { id: 3, title: "Meal prep strategies", author: "Emma Wilson", category: "Planning", comments: 15, likes: 45, createdAt: "2024-01-08" },
-        { id: 4, title: "Seasonal ingredient guide", author: "Alex Thompson", category: "Ingredients", comments: 6, likes: 18, createdAt: "2024-01-07" },
-    ]
 
     const getStatusBadge = (isOnline) => {
         switch (isOnline) {
@@ -200,16 +180,6 @@ export default function AdminDashboard() {
                             </div>
                             <span className="text-xs text-gray-400 ml-auto">2 hours ago</span>
                         </div>
-                        {/* <div className="flex items-center space-x-4 p-3 rounded-lg border">
-                            <div className="bg-green-100 p-2 rounded-full">
-                                <BookOpen className="h-4 w-4 text-green-600" />
-                            </div>
-                            <div>
-                                <p className="font-medium">Recipe approved</p>
-                                <p className="text-sm text-gray-500">Spicy Korean Ramen by Mike Chen</p>
-                            </div>
-                            <span className="text-xs text-gray-400 ml-auto">4 hours ago</span>
-                        </div> */}
                         <div className="flex items-center space-x-4 p-3 rounded-lg border">
                             <div className="bg-purple-100 p-2 rounded-full">
                                 <MessageSquare className="h-4 w-4 text-purple-600" />
@@ -420,50 +390,7 @@ export default function AdminDashboard() {
     // )
 
     const renderPosts = () => (
-        <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold">Posts Management</h2>
-                <Button className="bg-orange-500 hover:bg-orange-600">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Post
-                </Button>
-            </div>
-
-            <div className="space-y-4">
-                {posts.map((post) => (
-                    <Card key={post.id}>
-                        <CardContent className="p-4">
-                            <div className="flex justify-between items-start">
-                                <div className="flex-1">
-                                    <div className="flex items-center space-x-2 mb-2">
-                                        <Badge variant="outline">{post.category}</Badge>
-                                        <span className="text-sm text-gray-500">{post.createdAt}</span>
-                                    </div>
-                                    <h3 className="font-semibold text-lg mb-1">{post.title}</h3>
-                                    <p className="text-sm text-gray-600 mb-3">by {post.author}</p>
-                                    <div className="flex space-x-4 text-sm text-gray-500">
-                                        <span>{post.likes} likes</span>
-                                        <span>{post.comments} comments</span>
-                                    </div>
-                                </div>
-                                <DropdownMenu>
-                                    <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="sm">
-                                            <MoreHorizontal className="h-4 w-4" />
-                                        </Button>
-                                    </DropdownMenuTrigger>
-                                    <DropdownMenuContent>
-                                        <DropdownMenuItem><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
-                                        <DropdownMenuItem><Edit className="h-4 w-4 mr-2" />Edit</DropdownMenuItem>
-                                        <DropdownMenuItem><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
-                                    </DropdownMenuContent>
-                                </DropdownMenu>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
-            </div>
-        </div>
+        <PostManagement />
     )
 
     const renderSettings = () => (

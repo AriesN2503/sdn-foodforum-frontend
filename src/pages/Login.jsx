@@ -83,7 +83,7 @@ export default function Login() {
             )
             // Optionally call context login if needed
             if (login) {
-                login(user, data.accessToken)
+                login(data.accessToken, user)
             }
             navigate("/")
         } catch (err) {
