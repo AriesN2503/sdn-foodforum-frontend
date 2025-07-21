@@ -1,6 +1,4 @@
-import axiosClient from './axiosClient'
-import { storage } from '../lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import axiosClient from './axiosClient';
 
 export const getUsers = async () => {
     const response = await axiosClient.get('/users')
@@ -27,6 +25,11 @@ export const getCurrentUser = async () => {
     return response.data
 }
 
+export const updateUserStatus = async (id, status) => {
+    const response = await axiosClient.patch(`/users/${id}/status`, { status });
+    return response.data;
+}
+
 export const getUserFavoritePosts = async () => {
     const response = await axiosClient.get('/users/me/favorites')
     return response.data
@@ -42,9 +45,20 @@ export const removeFromFavorites = async (postId) => {
     return response.data
 }
 
+export const getCurrentUserPosts = async () => {
+    const response = await axiosClient.get('/users/me/posts');
+    return response.data;
+}
+
 export async function uploadAvatarToFirebase(file, userId) {
     if (!file || !userId) throw new Error('File and userId are required');
     const avatarRef = ref(storage, `avatars/${userId}/${file.name}`);
     await uploadBytes(avatarRef, file);
     return await getDownloadURL(avatarRef);
 }
+
+
+
+export const getMe = () => axiosClient.get('/users/me');
+export const getUserProfile = (username) => axiosClient.get(`/users/profile/${username}`);
+

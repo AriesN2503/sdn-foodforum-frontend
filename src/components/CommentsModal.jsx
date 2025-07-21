@@ -1,6 +1,6 @@
 import { Textarea } from "./ui/textarea"
 import { Button } from "./ui/button"
-import { CommentItem } from "./CommentItem"
+import CommentItem from "./CommentItem"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "./ui/dialog"
 
 export function CommentsModal({

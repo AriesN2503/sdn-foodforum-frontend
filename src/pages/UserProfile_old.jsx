@@ -361,7 +361,7 @@ export function UserProfile() {
                                     <p className="text-gray-500">No posts yet</p>
                                     <Button 
                                         className="mt-4 bg-orange-500 hover:bg-orange-600"
-                                        onClick={() => navigate('/create-post')}
+                                        onClick={() => navigate('/posts/new')}
                                     >
                                         Create Your First Post
                                     </Button>

@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router"
 import { Eye, EyeOff, Mail, Lock, User } from "lucide-react"
-import { AuthLayout } from "../layout/AuthLayout"
+import { AuthLayout } from "../layout"
 import { Label } from "../components/ui/label"
 import { Input } from "../components/ui/input"
 import { Checkbox } from "../components/ui/checkbox"
