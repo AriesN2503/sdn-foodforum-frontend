@@ -33,7 +33,7 @@ export function UserProfile() {
     const [userPosts, setUserPosts] = useState([])
     const [favoritePosts, setFavoritePosts] = useState([])
     const [activeTab, setActiveTab] = useState("profile")
-    const { setUser } = useAuth()
+    const { user: authUser, setUser, logout } = useAuth()
     const navigate = useNavigate()
 
     const [profileData, setProfileData] = useState({

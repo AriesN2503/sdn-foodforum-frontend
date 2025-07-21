@@ -5,6 +5,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
 
   useEffect(() => {
     const stored = localStorage.getItem("foodforum_auth")
@@ -12,6 +13,7 @@ export const AuthProvider = ({ children }) => {
       const { token, user } = JSON.parse(stored)
       setToken(token)
       setUser(user)
+      setIsAuthenticated(!!token && !!user)
     }
     setLoading(false)
   }, [])
@@ -19,19 +21,21 @@ export const AuthProvider = ({ children }) => {
   const login = (token, user) => {
     setToken(token)
     setUser(user)
+    setIsAuthenticated(true)
     localStorage.setItem("foodforum_auth", JSON.stringify({ token, user }))
   }
 
   const logout = () => {
     setToken(null)
     setUser(null)
+    setIsAuthenticated(false)
     localStorage.removeItem("foodforum_auth")
   }
 
   if (loading) return null // or a spinner
 
   return (
-    <AuthContext.Provider value={{ token, user, login, logout }}>
+    <AuthContext.Provider value={{ token, user, isAuthenticated, login, logout, setUser }}>
       {children}
     </AuthContext.Provider>
   )

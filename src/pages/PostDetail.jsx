@@ -90,8 +90,22 @@ export default function PostDetail() {
         timestamp: 'Vừa xong',
         votes: 0,
       }
-      setComments([comment, ...comments])
-      setNewComment("")
+    }
+  }
+
+  // Format timestamp
+  const formatTimestamp = (date) => {
+    if (!date) return 'Unknown time'
+    const now = new Date()
+    const postDate = new Date(date)
+    const diffInMinutes = Math.floor((now - postDate) / (1000 * 60))
+
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} minutes ago`
+    } else if (diffInMinutes < 1440) {
+      return `${Math.floor(diffInMinutes / 60)} hours ago`
+    } else {
+      return `${Math.floor(diffInMinutes / 1440)} days ago`
     }
   }
 

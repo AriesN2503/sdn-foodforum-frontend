@@ -2,8 +2,10 @@ import { useState, useEffect } from "react"
 import { CommentsModal } from "../components/CommentsModal"
 import { PostFeed } from "../components/PostFeed"
 import { getPosts } from "../api/post"
+import { useCategory } from "../hooks/useCategory";
 
 export default function Home() {
+    const { selectedCategory } = useCategory()
     const [isCommentsOpen, setIsCommentsOpen] = useState(false)
     const [newComment, setNewComment] = useState("")
     const [replyingTo, setReplyingTo] = useState(null)
@@ -33,6 +35,12 @@ export default function Home() {
 
     return (
         <>
+            {error && (
+                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+                    {error}
+                </div>
+            )}
+
             <PostFeed
                 posts={posts}
                 onCommentClick={handleCommentClick}

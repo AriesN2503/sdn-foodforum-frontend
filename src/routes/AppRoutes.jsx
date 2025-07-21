@@ -4,6 +4,7 @@ import ProtectedRoute from "./ProtectedRoute"
 import { useAuth } from "../hooks/useAuth"
 import Home from "../pages/Home"
 import PostDetail from "../pages/PostDetail"
+import CreatePost from "../pages/CreatePost"
 import Login from "../pages/Login"
 import Register from "../pages/Register"
 import ModeratorDashboard from "../pages/ModeratorDashboard"
@@ -28,6 +29,7 @@ const AppRoutes = () => {
     <Routes>
       <Route path="/" element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
         <Route index element={<Home />} />
+        <Route path="create-post" element={<CreatePost />} />
       </Route>
       <Route path="post/:id" element={<ProtectedRoute><PostDetail /></ProtectedRoute>} />
       <Route path="post/create" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
