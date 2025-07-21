@@ -9,6 +9,7 @@ import { Label } from "../components/ui/label"
 import { AuthLayout } from "../layout/AuthLayout"
 import { useToast } from "../context/ToastContext"
 import { login } from "../api/auth"
+import { useAuth } from "../hooks/useAuth";
 
 export default function AdminLogin() {
     const navigate = useNavigate()
@@ -20,6 +21,7 @@ export default function AdminLogin() {
     const [isLoading, setIsLoading] = useState(false)
     const [errors, setErrors] = useState({})
     const { showToast } = useToast()
+    const { login: contextLogin } = useAuth();
 
     const handleInputChange = (e) => {
         const { name, value } = e.target
@@ -46,6 +48,7 @@ export default function AdminLogin() {
             console.log(formData)
             const res = await login(formData.email, formData.password)
             console.log(res)
+            contextLogin(res.token, res.user)
             navigate('/admin')
             showToast("Login successful", { type: "success", duration: 3000 })
         } catch (err) {

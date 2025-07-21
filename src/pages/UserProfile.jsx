@@ -24,6 +24,7 @@ import { useAuth } from "../hooks/useAuth"
 import { useNavigate } from "react-router"
 import { PostCard } from "../components/PostCard"
 import MyPost from "../components/profile/MyPost"
+import ConfirmationModal from "../components/admin/ConfirmationModal";
 
 export function UserProfile() {
     const [isEditing, setIsEditing] = useState(false)
@@ -36,6 +37,7 @@ export function UserProfile() {
     const [activeTab, setActiveTab] = useState("profile")
     const { setUser } = useAuth()
     const navigate = useNavigate()
+    const [showBannedModal, setShowBannedModal] = useState(false);
 
     const [profileData, setProfileData] = useState({
         username: "",
@@ -49,6 +51,14 @@ export function UserProfile() {
     useEffect(() => {
         loadUserData()
     }, [])
+
+    useEffect(() => {
+        if (userData && userData.status === 'banned') {
+            setShowBannedModal(true);
+        } else {
+            setShowBannedModal(false);
+        }
+    }, [userData]);
 
     const loadUserData = async () => {
         try {
@@ -154,6 +164,16 @@ export function UserProfile() {
 
     return (
         <div className="max-w-6xl mx-auto p-6 space-y-6">
+            {/* Banned user modal */}
+            <ConfirmationModal
+                open={showBannedModal}
+                title="Account Banned"
+                message="Your account has been banned. You cannot create or manage posts. Please contact support if you believe this is a mistake."
+                onConfirm={() => setShowBannedModal(false)}
+                onCancel={() => setShowBannedModal(false)}
+                confirmText="OK"
+                cancelText=""
+            />
             {/* Back Button */}
             <Button
                 variant="ghost"
