@@ -4,11 +4,19 @@ import { Input } from "./ui/input"
 import { Link } from "react-router"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { useAuth } from "../hooks/useAuth"
-
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "./ui/dropdown-menu"
+import { useNavigate } from "react-router"
 
 
 export default function Header() {
-  const { isAuthenticated, user } = useAuth();
+  const { user, logout } = useAuth();
+  const isAuthenticated = !!user;
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
+  };
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -35,6 +43,16 @@ export default function Header() {
           <Link to="/chat" className="p-2 rounded-full hover:bg-orange-100 transition-colors">
             <MessageCircle className="h-6 w-6 text-orange-500" />
           </Link>
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              className="p-2 rounded-full hover:bg-orange-100 transition-colors"
+              title="Tạo bài viết mới"
+              onClick={() => navigate("/post/create")}
+            >
+              <Plus className="h-6 w-6 text-orange-500" />
+            </Button>
+          )}
           {isAuthenticated && user ? (
             <>
               <Link to="/posts/new">
