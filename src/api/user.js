@@ -27,6 +27,11 @@ export const getCurrentUser = async () => {
     return response.data
 }
 
+export const updateUserStatus = async (id, status) => {
+    const response = await axiosClient.patch(`/users/${id}/status`, { status });
+    return response.data;
+}
+
 export const getUserFavoritePosts = async () => {
     const response = await axiosClient.get('/users/me/favorites')
     return response.data

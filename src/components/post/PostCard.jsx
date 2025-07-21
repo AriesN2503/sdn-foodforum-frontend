@@ -1,5 +1,5 @@
 import { MessageCircle, Share, Bookmark, ChevronUp, ChevronDown } from "lucide-react"
-import { Button } from "./ui/button"
+import { Button } from "../ui/button"
 import { useNavigate } from "react-router"
 
 export function PostCard({
@@ -11,8 +11,7 @@ export function PostCard({
   timestamp,
   votes,
   commentCount,
-  imageUrl, // Keep for backward compatibility
-  images, // New images array
+  imageUrl,
   onCommentClick,
 }) {
   const navigate = useNavigate()
@@ -22,7 +21,7 @@ export function PostCard({
   }
 
   const handleCommentClick = (e) => {
-    e.stopPropagation()
+    e.stopPropagation() 
     onCommentClick(id)
   }
 
@@ -51,17 +50,23 @@ export function PostCard({
         <div className="flex-1 cursor-pointer" onClick={handlePostClick}>
           <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
             <span className="text-orange-500">{subreddit}</span>
-            <span>Posted by {author?.username || "Anonymous"}</span>
+            <span>
+              Đăng bởi {
+                author && typeof author === 'object'
+                  ? (typeof author.username === 'string' ? author.username : 'Ẩn danh')
+                  : (typeof author === 'string' ? author : 'Ẩn danh')
+              }
+            </span>
             <span>{timestamp}</span>
           </div>
           <h3 className="text-xl font-semibold text-gray-800 mb-4 hover:text-orange-600 transition-colors">
             {title}
           </h3>
-          {(imageUrl || (images && images.length > 0)) && (
+          {imageUrl && (
             <div className="mb-4">
               <img
-                src={images && images.length > 0 ? images[0].url : imageUrl}
-                alt="Post image"
+                src={imageUrl}
+                alt="Ảnh món ăn"
                 width={200}
                 height={120}
                 className="rounded-lg object-cover w-full h-[400px]"
@@ -75,25 +80,25 @@ export function PostCard({
               className="flex items-center space-x-1 hover:text-orange-500 cursor-pointer"
             >
               <MessageCircle className="h-4 w-4" />
-              <span>{commentCount} Comments</span>
+              <span>{commentCount} Bình luận</span>
             </button>
             <button
               onClick={(e) => e.stopPropagation()}
               className="flex items-center space-x-1 hover:text-orange-500 cursor-pointer"
             >
               <Share className="h-4 w-4" />
-              <span>Share</span>
+              <span>Chia sẻ</span>
             </button>
             <button
               onClick={(e) => e.stopPropagation()}
               className="flex items-center space-x-1 hover:text-orange-500 cursor-pointer"
             >
               <Bookmark className="h-4 w-4" />
-              <span>Save</span>
+              <span>Lưu</span>
             </button>
           </div>
         </div>
       </div>
     </article>
   )
-}
+} 

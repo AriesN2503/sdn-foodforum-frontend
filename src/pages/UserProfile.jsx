@@ -54,9 +54,7 @@ export function UserProfile() {
             setLoading(true)
 
             // Get current user data
-            const userResponse = await getCurrentUser()
-            const user = userResponse.user
-
+            const user = await getCurrentUser()
             setUserData(user)
             setProfileData({
                 username: user.username || "",
@@ -329,7 +327,7 @@ export function UserProfile() {
                                     </p>
                                     <Button
                                         onClick={() => navigate('/create-post')}
-                                        className="mt-4 bg-orange-500 hover:bg-orange-600"
+                                        className="mt-4 bg-orange-500 hover:bg-orange-600 text-white"
                                     >
                                         Create Post
                                     </Button>
@@ -360,7 +358,7 @@ export function UserProfile() {
                                     </p>
                                     <Button
                                         onClick={() => navigate('/')}
-                                        className="mt-4 bg-orange-500 hover:bg-orange-600"
+                                        className="mt-4 bg-orange-500 hover:bg-orange-600 text-white"
                                     >
                                         Explore Posts
                                     </Button>

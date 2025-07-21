@@ -62,7 +62,6 @@ export default function Login() {
         setIsLoading(true)
         setErrors({})
         try {
-            await login(formData.email, formData.password)
             const data = await loginApi(formData.email, formData.password)
             // Decode JWT để lấy thông tin user
             let user = data.user || {};
@@ -82,6 +81,10 @@ export default function Login() {
                     token: data.accessToken,
                 })
             )
+            // Optionally call context login if needed
+            if (login) {
+                login(data.accessToken, user)
+            }
             navigate("/")
         } catch (err) {
             setErrors({ general: err?.response?.data?.error || err.message || "Invalid email or password" })
