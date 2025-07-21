@@ -18,11 +18,12 @@ import {
     ChevronDown,
     ArrowLeft,
 } from "lucide-react"
-import { getCurrentUser, updateUser, getUserFavoritePosts } from "../api/user"
+import { getCurrentUser, updateUser, getUserFavoritePosts, getCurrentUserPosts } from "../api/user"
 import postsApi from "../api/posts"
 import { useAuth } from "../hooks/useAuth"
 import { useNavigate } from "react-router"
 import { PostCard } from "../components/PostCard"
+import MyPost from "../components/profile/MyPost"
 
 export function UserProfile() {
     const [isEditing, setIsEditing] = useState(false)
@@ -65,14 +66,12 @@ export function UserProfile() {
             })
 
             // Load user's posts
-            if (user.id) {
-                try {
-                    const posts = await postsApi.getPostsByUser(user.id)
-                    setUserPosts(Array.isArray(posts) ? posts : [])
-                } catch (error) {
-                    console.error('Error loading user posts:', error)
-                    setUserPosts([])
-                }
+            try {
+                const posts = await getCurrentUserPosts()
+                setUserPosts(Array.isArray(posts) ? posts : [])
+            } catch (error) {
+                console.error('Error loading user posts:', error)
+                setUserPosts([])
             }
 
             // Load favorite posts
@@ -269,7 +268,7 @@ export function UserProfile() {
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList className="grid w-full grid-cols-3">
                     <TabsTrigger value="profile">Profile</TabsTrigger>
-                    <TabsTrigger value="posts">My Posts ({userPosts.length})</TabsTrigger>
+                    <TabsTrigger value="posts">My Posts ({userPosts.filter(post => post.status === 'active').length})</TabsTrigger>
                     <TabsTrigger value="favorites">Favorites ({favoritePosts.length})</TabsTrigger>
                 </TabsList>
 
@@ -307,34 +306,7 @@ export function UserProfile() {
                 </TabsContent>
 
                 <TabsContent value="posts">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle>My Posts</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            {userPosts.length > 0 ? (
-                                <div className="space-y-4">
-                                    {userPosts.map((post) => (
-                                        <PostCard key={post._id} post={post} />
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-8">
-                                    <MessageSquare className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                                    <p className="text-gray-500">No posts yet</p>
-                                    <p className="text-sm text-gray-400">
-                                        Share your first post to get started!
-                                    </p>
-                                    <Button
-                                        onClick={() => navigate('/create-post')}
-                                        className="mt-4 bg-orange-500 hover:bg-orange-600 text-white"
-                                    >
-                                        Create Post
-                                    </Button>
-                                </div>
-                            )}
-                        </CardContent>
-                    </Card>
+                    <MyPost userPosts={userPosts} navigate={navigate} />
                 </TabsContent>
 
                 <TabsContent value="favorites">
