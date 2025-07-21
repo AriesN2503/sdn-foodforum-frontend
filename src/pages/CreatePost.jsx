@@ -4,172 +4,261 @@ import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Textarea } from "../components/ui/textarea"
 import { Label } from "../components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
-import { Upload, Image as ImageIcon, X } from "lucide-react"
-import { useAuth } from "../hooks/useAuth"
+import { Plus, Trash2, Upload } from "lucide-react"
 import { useNavigate } from "react-router"
 import postsApi from "../api/posts"
-import categoriesApi from "../api/categories"
 import { useToast } from "../components/ui/use-toast"
+import axiosClient from "../api/axiosClient"
+import categoriesApi from "../api/categories"
+import Select from "react-select"
+
+async function uploadImage(file, token) {
+    const formData = new FormData();
+    formData.append("image", file);
+    const res = await axiosClient.post("/upload/image", formData, {
+        headers: {
+            "Content-Type": "multipart/form-data",
+            Authorization: `Bearer ${token}`
+        }
+    });
+    return res.data.imageUrl;
+}
 
 export default function CreatePost() {
-    const { user, token } = useAuth()
     const navigate = useNavigate()
     const { toast } = useToast()
     const [loading, setLoading] = useState(false)
+    const [uploading, setUploading] = useState({}) // {thumbnail: false, ingredient-0: false, instruction-0: false, ...}
     const [categories, setCategories] = useState([])
-    const [selectedImage, setSelectedImage] = useState(null)
-    const [imagePreview, setImagePreview] = useState(null)
-
+    const [categoryError, setCategoryError] = useState("")
     const [formData, setFormData] = useState({
         title: "",
-        content: "",
-        category: "",
-        // Recipe fields
-        prepTime: "",
-        cookTime: "",
+        description: "",
+        thumbnailUrl: "",
+        categoryIds: [],
+        prepTimeMinutes: "",
+        cookTimeMinutes: "",
         servings: "",
-        difficulty: "",
-        ingredients: "",
-        instructions: ""
+        notes: "",
+        ingredients: [
+            { name: "", quantity: "", imageUrl: "" }
+        ],
+        instructions: [
+            { stepNumber: 1, stepDescription: "", imageUrl: "" }
+        ]
     })
 
-    const loadCategories = async () => {
-        try {
-            const categoriesData = await categoriesApi.getAllCategories()
-            setCategories(categoriesData)
-        } catch (error) {
-            console.error('Error loading categories:', error)
-            toast({
-                title: "Error",
-                description: "Failed to load categories",
-                variant: "destructive"
-            })
-        }
-    }
-
     useEffect(() => {
-        // Redirect if not authenticated
-        if (!user || !token) {
-            navigate("/login")
-            return
+        console.log('abc')
+        const fetchCategories = async () => {
+            try {
+                const data = await categoriesApi.getAllCategories()
+                setCategories(data)
+            } catch {
+                toast({ title: "Lỗi", description: "Không thể tải danh mục", variant: "destructive" })
+            }
         }
+        fetchCategories()
+    }, [])
 
-        loadCategories()
-    }, [user, token, navigate]) // eslint-disable-line react-hooks/exhaustive-deps
+    // Lấy token từ localStorage (giả định đã login)
+    const token = JSON.parse(localStorage.getItem("foodforum_auth"))?.token;
+    const userId = JSON.parse(localStorage.getItem("foodforum_auth"))?.user?.id;
 
-    const handleInputChange = (e) => {
+    // Xử lý thay đổi trường cơ bản
+    const handleChange = (e) => {
         const { name, value } = e.target
-        setFormData(prev => ({
-            ...prev,
-            [name]: value
-        }))
+        setFormData(prev => ({ ...prev, [name]: value }))
     }
 
-    const handleCategoryChange = (value) => {
-        setFormData(prev => ({
-            ...prev,
-            category: value
-        }))
-    }
-
-    const handleImageChange = (e) => {
-        const file = e.target.files[0]
-        if (file) {
-            // Validate file type
-            if (!file.type.startsWith('image/')) {
-                toast({
-                    title: "Error",
-                    description: "Please select an image file",
-                    variant: "destructive"
-                })
-                return
-            }
-
-            // Validate file size (5MB)
-            if (file.size > 5 * 1024 * 1024) {
-                toast({
-                    title: "Error",
-                    description: "Image size must be less than 5MB",
-                    variant: "destructive"
-                })
-                return
-            }
-
-            setSelectedImage(file)
-
-            // Create preview
-            const reader = new FileReader()
-            reader.onload = (e) => {
-                setImagePreview(e.target.result)
-            }
-            reader.readAsDataURL(file)
+    // Xử lý upload ảnh thumbnail
+    const handleThumbnailUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setUploading(prev => ({ ...prev, thumbnail: true }));
+        try {
+            const url = await uploadImage(file, token);
+            setFormData(prev => ({ ...prev, thumbnailUrl: url }));
+            toast({ title: "Thành công", description: "Tải ảnh thành công!", variant: "default" });
+        } catch {
+            toast({ title: "Lỗi", description: "Tải ảnh thất bại!", variant: "destructive" });
+        } finally {
+            setUploading(prev => ({ ...prev, thumbnail: false }));
         }
     }
 
-    const removeImage = () => {
-        setSelectedImage(null)
-        setImagePreview(null)
+    // Xử lý upload ảnh nguyên liệu
+    const handleIngredientImageUpload = async (idx, e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setUploading(prev => ({ ...prev, ["ingredient-" + idx]: true }));
+        try {
+            const url = await uploadImage(file, token);
+            setFormData(prev => {
+                const ingredients = [...prev.ingredients];
+                ingredients[idx].imageUrl = url;
+                return { ...prev, ingredients };
+            });
+            toast({ title: "Thành công", description: "Tải ảnh thành công!", variant: "default" });
+        } catch {
+            toast({ title: "Lỗi", description: "Tải ảnh thất bại!", variant: "destructive" });
+        } finally {
+            setUploading(prev => ({ ...prev, ["ingredient-" + idx]: false }));
+        }
     }
 
+    // Xử lý upload ảnh hướng dẫn
+    const handleInstructionImageUpload = async (idx, e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        setUploading(prev => ({ ...prev, ["instruction-" + idx]: true }));
+        try {
+            const url = await uploadImage(file, token);
+            setFormData(prev => {
+                const instructions = [...prev.instructions];
+                instructions[idx].imageUrl = url;
+                return { ...prev, instructions };
+            });
+            toast({ title: "Thành công", description: "Tải ảnh thành công!", variant: "default" });
+        } catch {
+            toast({ title: "Lỗi", description: "Tải ảnh thất bại!", variant: "destructive" });
+        } finally {
+            setUploading(prev => ({ ...prev, ["instruction-" + idx]: false }));
+        }
+    }
+
+    // Xử lý thay đổi nguyên liệu
+    const handleIngredientChange = (idx, field, value) => {
+        setFormData(prev => {
+            const ingredients = [...prev.ingredients]
+            ingredients[idx][field] = value
+            return { ...prev, ingredients }
+        })
+    }
+
+    // Thêm nguyên liệu
+    const addIngredient = () => {
+        setFormData(prev => ({
+            ...prev,
+            ingredients: [...prev.ingredients, { name: "", quantity: "", imageUrl: "" }]
+        }))
+    }
+
+    // Xóa nguyên liệu
+    const removeIngredient = (idx) => {
+        setFormData(prev => {
+            const ingredients = prev.ingredients.filter((_, i) => i !== idx)
+            return { ...prev, ingredients }
+        })
+    }
+
+    // Xử lý thay đổi hướng dẫn
+    const handleInstructionChange = (idx, field, value) => {
+        setFormData(prev => {
+            const instructions = [...prev.instructions]
+            instructions[idx][field] = value
+            if (field === "stepDescription" && !instructions[idx].stepNumber) {
+                instructions[idx].stepNumber = idx + 1
+            }
+            return { ...prev, instructions }
+        })
+    }
+
+    // Thêm hướng dẫn
+    const addInstruction = () => {
+        setFormData(prev => ({
+            ...prev,
+            instructions: [...prev.instructions, { stepNumber: prev.instructions.length + 1, stepDescription: "", imageUrl: "" }]
+        }))
+    }
+
+    // Xóa hướng dẫn
+    const removeInstruction = (idx) => {
+        setFormData(prev => {
+            const instructions = prev.instructions.filter((_, i) => i !== idx)
+            // Cập nhật lại số thứ tự bước
+            instructions.forEach((ins, i) => ins.stepNumber = i + 1)
+            return { ...prev, instructions }
+        })
+    }
+
+    // Xử lý chọn category (multi-select)
+    const handleCategoryChange = (e) => {
+        const selected = Array.from(e.target.selectedOptions, option => option.value)
+        setFormData(prev => ({ ...prev, categoryIds: selected }))
+        if (selected.length < 1) setCategoryError("Vui lòng chọn ít nhất 1 danh mục.")
+        else if (selected.length > 3) setCategoryError("Chỉ được chọn tối đa 3 danh mục.")
+        else setCategoryError("")
+    }
+
+    // Helper để chuyển categories sang options cho react-select
+    const categoryOptions = categories.map(cat => ({
+      value: cat._id,
+      label: cat.name,
+      imageUrl: cat.imageUrl
+    }))
+
+    // Custom option hiển thị ảnh + tên
+    const formatCategoryOption = (option) => {
+      const data = option.data || option;
+      return (
+        <div className="flex items-center gap-2">
+          <span>{data.label}</span>
+        </div>
+      );
+    }
+
+    // Xử lý submit
     const handleSubmit = async (e) => {
         e.preventDefault()
-
-        if (!formData.title.trim() || !formData.content.trim() || !formData.category) {
+        if (!formData.title.trim() || !formData.description.trim() || !formData.thumbnailUrl.trim()) {
             toast({
-                title: "Error",
-                description: "Please fill in all required fields",
+                title: "Lỗi",
+                description: "Vui lòng điền đầy đủ các trường bắt buộc (Tiêu đề, Mô tả, Ảnh đại diện, Danh mục)",
                 variant: "destructive"
             })
             return
         }
-
+        if (formData.categoryIds.length < 1) {
+            setCategoryError("Vui lòng chọn ít nhất 1 danh mục.")
+            return
+        }
+        if (formData.categoryIds.length > 3) {
+            setCategoryError("Chỉ được chọn tối đa 3 danh mục.")
+            return
+        }
+        setCategoryError("")
+        if (!userId) {
+            toast({ title: "Lỗi", description: "Không xác định được người dùng!", variant: "destructive" });
+            return;
+        }
         setLoading(true)
-
         try {
-            const postData = new FormData()
-            postData.append('title', formData.title.trim())
-            postData.append('content', formData.content.trim())
-            postData.append('category', formData.category)
-
-            // Add recipe fields if provided
-            if (formData.prepTime.trim()) {
-                postData.append('recipe.prepTime', formData.prepTime.trim())
-            }
-            if (formData.cookTime.trim()) {
-                postData.append('recipe.cookTime', formData.cookTime.trim())
-            }
-            if (formData.servings.trim()) {
-                postData.append('recipe.servings', formData.servings.trim())
-            }
-            if (formData.difficulty) {
-                postData.append('recipe.difficulty', formData.difficulty)
-            }
-            if (formData.ingredients.trim()) {
-                postData.append('ingredients', formData.ingredients.trim())
-            }
-            if (formData.instructions.trim()) {
-                postData.append('instructions', formData.instructions.trim())
-            }
-
-            if (selectedImage) {
-                postData.append('image', selectedImage)
-            }
-
-            await postsApi.createPost(postData)
-
+            const response = await postsApi.createPost({
+                ...formData,
+                author: userId,
+                prepTimeMinutes: Number(formData.prepTimeMinutes) || 0,
+                cookTimeMinutes: Number(formData.cookTimeMinutes) || 0,
+                servings: Number(formData.servings) || 0,
+                categories: formData.categoryIds,
+                ingredients: JSON.stringify(formData.ingredients),
+                instructions: JSON.stringify(formData.instructions)
+            })
             toast({
-                title: "Success",
-                description: "Post created successfully!",
+                title: "Thành công",
+                description: "Bài viết đã được tạo thành công!",
                 variant: "default"
             })
-
+            // Chuyển hướng sang trang chi tiết post
+            if (response && response.post && response.post.slug) {
+                navigate(`/posts/${response.post.slug}`)
+            } else {
             navigate("/")
+            }
         } catch (error) {
-            console.error('Error creating post:', error)
             toast({
-                title: "Error",
-                description: error.response?.data?.message || "Failed to create post",
+                title: "Lỗi",
+                description: error.response?.data?.message || "Không thể tạo bài viết",
                 variant: "destructive"
             })
         } finally {
@@ -177,207 +266,129 @@ export default function CreatePost() {
         }
     }
 
-    if (!user || !token) {
-        return null // Will redirect
-    }
-
     return (
         <div className="max-w-4xl mx-auto p-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-2xl font-bold text-gray-800">Create New Post</CardTitle>
+                    <CardTitle className="text-2xl font-bold text-[#FF6900] text-center">Tạo Bài Viết Mới</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* Title */}
+                        {/* Tiêu đề */}
                         <div className="space-y-2">
-                            <Label htmlFor="title">Title *</Label>
-                            <Input
-                                id="title"
-                                name="title"
-                                value={formData.title}
-                                onChange={handleInputChange}
-                                placeholder="Enter your post title"
-                                className="w-full"
-                                required
-                            />
+                            <Label htmlFor="title">Tiêu đề *</Label>
+                            <Input id="title" name="title" value={formData.title} onChange={handleChange} placeholder="Nhập tiêu đề bài viết" required />
                         </div>
-
-                        {/* Category */}
+                        {/* Mô tả */}
                         <div className="space-y-2">
-                            <Label htmlFor="category">Category *</Label>
-                            <Select onValueChange={handleCategoryChange} required>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Select a category" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    {categories.map((category) => (
-                                        <SelectItem key={category._id} value={category._id}>
-                                            <span className="flex items-center gap-2">
-                                                <span>{category.icon}</span>
-                                                <span>{category.name}</span>
-                                            </span>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
+                            <Label htmlFor="description">Mô tả *</Label>
+                            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} placeholder="Nhập mô tả ngắn cho bài viết" required />
                         </div>
-
-                        {/* Content */}
+                        {/* Ảnh đại diện */}
                         <div className="space-y-2">
-                            <Label htmlFor="content">Content *</Label>
-                            <Textarea
-                                id="content"
-                                name="content"
-                                value={formData.content}
-                                onChange={handleInputChange}
-                                placeholder="Share your food experience, recipe, or story..."
-                                className="w-full min-h-[120px]"
-                                required
-                            />
-                        </div>
-
-                        {/* Recipe Section */}
-                        <div className="space-y-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                            <h3 className="text-lg font-semibold text-gray-800">Recipe Details (Optional)</h3>
-
-                            {/* Recipe Time and Servings */}
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="prepTime">Prep Time</Label>
-                                    <Input
-                                        id="prepTime"
-                                        name="prepTime"
-                                        value={formData.prepTime}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g., 15 minutes"
-                                        className="w-full"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="cookTime">Cook Time</Label>
-                                    <Input
-                                        id="cookTime"
-                                        name="cookTime"
-                                        value={formData.cookTime}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g., 30 minutes"
-                                        className="w-full"
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="servings">Servings</Label>
-                                    <Input
-                                        id="servings"
-                                        name="servings"
-                                        value={formData.servings}
-                                        onChange={handleInputChange}
-                                        placeholder="e.g., 4 people"
-                                        className="w-full"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Difficulty */}
-                            <div className="space-y-2">
-                                <Label htmlFor="difficulty">Difficulty</Label>
-                                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, difficulty: value }))}>
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select difficulty level" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        <SelectItem value="Easy">Easy</SelectItem>
-                                        <SelectItem value="Intermediate">Intermediate</SelectItem>
-                                        <SelectItem value="Advanced">Advanced</SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            {/* Ingredients */}
-                            <div className="space-y-2">
-                                <Label htmlFor="ingredients">Ingredients</Label>
-                                <Textarea
-                                    id="ingredients"
-                                    name="ingredients"
-                                    value={formData.ingredients}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter each ingredient on a new line:&#10;• 2 cups flour&#10;• 1 cup sugar&#10;• 3 eggs"
-                                    className="w-full min-h-[100px]"
-                                />
-                            </div>
-
-                            {/* Instructions */}
-                            <div className="space-y-2">
-                                <Label htmlFor="instructions">Instructions</Label>
-                                <Textarea
-                                    id="instructions"
-                                    name="instructions"
-                                    value={formData.instructions}
-                                    onChange={handleInputChange}
-                                    placeholder="Enter each step on a new line:&#10;1. Preheat oven to 350°F&#10;2. Mix dry ingredients&#10;3. Add wet ingredients"
-                                    className="w-full min-h-[120px]"
-                                />
-                            </div>
-                        </div>
-
-                        {/* Image Upload */}
-                        <div className="space-y-2">
-                            <Label htmlFor="image">Image (Optional)</Label>
-                            {!imagePreview ? (
-                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-500 transition-colors">
-                                    <input
-                                        id="image"
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageChange}
-                                        className="hidden"
-                                    />
-                                    <label htmlFor="image" className="cursor-pointer">
-                                        <Upload className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-                                        <p className="text-gray-600">
-                                            Click to upload an image or drag and drop
-                                        </p>
-                                        <p className="text-sm text-gray-500 mt-2">
-                                            PNG, JPG, GIF up to 5MB
-                                        </p>
+                            <Label>Ảnh đại diện *</Label>
+                            <div className="flex items-center gap-4">
+                                <Button asChild type="button" variant="outline" disabled={uploading.thumbnail}>
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <Upload className="w-4 h-4" />
+                                        {uploading.thumbnail ? "Đang tải..." : "Tải ảnh lên"}
+                                        <input type="file" accept="image/*" className="hidden" onChange={handleThumbnailUpload} />
                                     </label>
-                                </div>
-                            ) : (
-                                <div className="relative">
-                                    <img
-                                        src={imagePreview}
-                                        alt="Preview"
-                                        className="w-full h-64 object-cover rounded-lg"
-                                    />
-                                    <Button
-                                        type="button"
-                                        variant="destructive"
-                                        size="sm"
-                                        className="absolute top-2 right-2"
-                                        onClick={removeImage}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-                            )}
+                                </Button>
+                                {formData.thumbnailUrl && <img src={formData.thumbnailUrl} alt="thumbnail" className="h-20 w-20 object-cover rounded" />}
+                            </div>
                         </div>
-
-                        {/* Submit Button */}
+                        {/* Danh mục */}
+                        <div className="space-y-2">
+                            <Label htmlFor="categoryIds">Danh mục *</Label>
+                            <Select
+                                inputId="categoryIds"
+                                isMulti
+                                options={categoryOptions}
+                                value={categoryOptions.filter(opt => formData.categoryIds.includes(opt.value))}
+                                onChange={selected => {
+                                  const ids = selected.map(opt => opt.value)
+                                  setFormData(prev => ({ ...prev, categoryIds: ids }))
+                                  if (ids.length < 1) setCategoryError("Vui lòng chọn ít nhất 1 danh mục.")
+                                  else if (ids.length > 3) setCategoryError("Chỉ được chọn tối đa 3 danh mục.")
+                                  else setCategoryError("")
+                                }}
+                                closeMenuOnSelect={false}
+                                placeholder="Chọn danh mục..."
+                                maxMenuHeight={200}
+                                isOptionDisabled={option => formData.categoryIds.length >= 3 && !formData.categoryIds.includes(option.value)}
+                                formatOptionLabel={formatCategoryOption}
+                                classNamePrefix="react-select"
+                            />
+                            <div className="text-xs text-gray-500">Chọn tối đa 3 danh mục</div>
+                            {categoryError && <div className="text-red-500 text-sm mt-1">{categoryError}</div>}
+                        </div>
+                        {/* Thời gian chuẩn bị, nấu, khẩu phần */}
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="prepTimeMinutes">Thời gian chuẩn bị (phút)</Label>
+                                <Input id="prepTimeMinutes" name="prepTimeMinutes" type="number" min="0" value={formData.prepTimeMinutes} onChange={handleChange} placeholder="VD: 15" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="cookTimeMinutes">Thời gian nấu (phút)</Label>
+                                <Input id="cookTimeMinutes" name="cookTimeMinutes" type="number" min="0" value={formData.cookTimeMinutes} onChange={handleChange} placeholder="VD: 30" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="servings">Khẩu phần</Label>
+                                <Input id="servings" name="servings" type="number" min="1" value={formData.servings} onChange={handleChange} placeholder="VD: 4" />
+                            </div>
+                        </div>
+                        {/* Nguyên liệu */}
+                        <div className="space-y-2">
+                            <Label>Nguyên liệu</Label>
+                            {formData.ingredients.map((ing, idx) => (
+                                <div key={idx} className="flex gap-2 items-center mb-2">
+                                    <Input placeholder="Tên nguyên liệu" value={ing.name} onChange={e => handleIngredientChange(idx, "name", e.target.value)} className="w-1/3" />
+                                    <Input placeholder="Số lượng" value={ing.quantity} onChange={e => handleIngredientChange(idx, "quantity", e.target.value)} className="w-1/3" />
+                                    <Button asChild type="button" variant="outline" disabled={uploading["ingredient-" + idx]} className="w-1/3">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <Upload className="w-4 h-4" />
+                                            {uploading["ingredient-" + idx] ? "Đang tải..." : "Tải ảnh"}
+                                            <input type="file" accept="image/*" className="hidden" onChange={e => handleIngredientImageUpload(idx, e)} />
+                                    </label>
+                                    </Button>
+                                    {ing.imageUrl && <img src={ing.imageUrl} alt="ingredient" className="h-12 w-12 object-cover rounded" />}
+                                    <Button type="button" variant="destructive" size="icon" onClick={() => removeIngredient(idx)} disabled={formData.ingredients.length === 1}><Trash2 className="w-4 h-4" /></Button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" onClick={addIngredient} className="mt-1"><Plus className="w-4 h-4 mr-1" />Thêm nguyên liệu</Button>
+                        </div>
+                        {/* Hướng dẫn */}
+                        <div className="space-y-2">
+                            <Label>Hướng dẫn</Label>
+                            {formData.instructions.map((ins, idx) => (
+                                <div key={idx} className="flex gap-2 items-center mb-2">
+                                    <Input placeholder={`Bước ${idx + 1}`} value={ins.stepNumber} disabled className="w-1/6" />
+                                    <Input placeholder="Mô tả bước" value={ins.stepDescription} onChange={e => handleInstructionChange(idx, "stepDescription", e.target.value)} className="w-3/6" />
+                                    <Button asChild type="button" variant="outline" disabled={uploading["instruction-" + idx]} className="w-2/6">
+                                        <label className="flex items-center gap-2 cursor-pointer">
+                                            <Upload className="w-4 h-4" />
+                                            {uploading["instruction-" + idx] ? "Đang tải..." : "Tải ảnh"}
+                                            <input type="file" accept="image/*" className="hidden" onChange={e => handleInstructionImageUpload(idx, e)} />
+                                        </label>
+                                    </Button>
+                                    {ins.imageUrl && <img src={ins.imageUrl} alt="instruction" className="h-12 w-12 object-cover rounded" />}
+                                    <Button type="button" variant="destructive" size="icon" onClick={() => removeInstruction(idx)} disabled={formData.instructions.length === 1}><Trash2 className="w-4 h-4" /></Button>
+                                </div>
+                            ))}
+                            <Button type="button" variant="outline" onClick={addInstruction} className="mt-1"><Plus className="w-4 h-4 mr-1" />Thêm bước hướng dẫn</Button>
+                        </div>
+                        {/* Ghi chú */}
+                        <div className="space-y-2">
+                            <Label htmlFor="notes">Ghi chú</Label>
+                            <Textarea id="notes" name="notes" value={formData.notes} onChange={handleChange} placeholder="Ghi chú thêm (nếu có)" />
+                        </div>
+                        {/* Nút submit */}
                         <div className="flex gap-4">
-                            <Button
-                                type="submit"
-                                disabled={loading}
-                                className="bg-orange-500 hover:bg-orange-600 text-white px-8"
-                            >
-                                {loading ? "Creating..." : "Create Post"}
+                            <Button type="submit" disabled={loading} className="bg-orange-500 hover:bg-orange-600 text-white px-8">
+                                {loading ? "Đang tạo..." : "Tạo Bài Viết"}
                             </Button>
-                            <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => navigate("/")}
-                            >
-                                Cancel
-                            </Button>
+                            <Button type="button" variant="outline" onClick={() => navigate("/")}>Hủy</Button>
                         </div>
                     </form>
                 </CardContent>

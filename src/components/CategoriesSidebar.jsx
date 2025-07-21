@@ -2,10 +2,12 @@ import { Home, TrendingUp, ChefHat, MapPin, Coffee, Cake, Heart, Globe, Users } 
 import { Card, CardContent } from "./ui/card"
 import { useState, useEffect } from "react"
 import categoriesApi from "../api/categories"
+import { useNavigate } from "react-router-dom"
 
-export function CategoriesSidebar({ onCategorySelect, selectedCategory }) {
+export function CategoriesSidebar({ selectedCategory }) {
     const [categories, setCategories] = useState([])
     const [loading, setLoading] = useState(true)
+    const navigate = useNavigate();
 
     useEffect(() => {
         loadCategories()
@@ -44,16 +46,14 @@ export function CategoriesSidebar({ onCategorySelect, selectedCategory }) {
         return iconMap[categoryName] || ChefHat
     }
 
-    const communities = [{ label: "Italian Cuisine" }, { label: "Vegan Recipes" }]
-
     return (
         <aside className="w-full space-y-6">
             <Card>
                 <CardContent className="p-4">
-                    <h3 className="font-semibold text-orange-500 mb-4">Categories</h3>
+                    <h3 className="font-semibold text-orange-500 mb-4">Danh Mục Món Ăn</h3>
                     <nav className="space-y-2">
                         {loading ? (
-                            <div className="text-gray-500">Loading categories...</div>
+                            <div className="text-gray-500">Đang tải danh mục...</div>
                         ) : (
                             categories.map((category) => {
                                 const Icon = getIcon(category.name)
@@ -61,7 +61,11 @@ export function CategoriesSidebar({ onCategorySelect, selectedCategory }) {
                                 return (
                                     <button
                                         key={category._id}
-                                        onClick={() => onCategorySelect(category.name)}
+                                        onClick={() => {
+                                            // Ưu tiên slug, fallback name
+                                            const catSlug = category.slug || category.name
+                                            navigate(`/posts/all?categorySlugs=${encodeURIComponent(catSlug)}`)
+                                        }}
                                         className={`flex items-center space-x-3 w-full text-left py-2 px-2 rounded transition-colors ${isSelected
                                                 ? 'bg-orange-100 text-orange-600'
                                                 : 'text-gray-700 hover:text-orange-500 hover:bg-orange-50'
@@ -74,24 +78,6 @@ export function CategoriesSidebar({ onCategorySelect, selectedCategory }) {
                             })
                         )}
                     </nav>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardContent className="p-4">
-                    <h3 className="font-semibold text-orange-500 mb-4">My Communities</h3>
-                    <div className="space-y-3">
-                        {communities.map((community) => (
-                            <a
-                                key={community.label}
-                                href="#"
-                                className="flex items-center space-x-3 text-gray-700 hover:text-orange-500"
-                            >
-                                <Users className="h-4 w-4" />
-                                <span>{community.label}</span>
-                            </a>
-                        ))}
-                    </div>
                 </CardContent>
             </Card>
         </aside>
