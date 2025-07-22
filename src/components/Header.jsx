@@ -43,16 +43,6 @@ export default function Header() {
           <Link to="/chat" className="p-2 rounded-full hover:bg-orange-100 transition-colors">
             <MessageCircle className="h-6 w-6 text-orange-500" />
           </Link>
-          {isAuthenticated && (
-            <Button
-              variant="ghost"
-              className="p-2 rounded-full hover:bg-orange-100 transition-colors"
-              title="Tạo bài viết mới"
-              onClick={() => navigate("/post/create")}
-            >
-              <Plus className="h-6 w-6 text-orange-500" />
-            </Button>
-          )}
           {isAuthenticated && user ? (
             <>
               <Link to="/posts/new">
