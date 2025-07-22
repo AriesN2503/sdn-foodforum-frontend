@@ -45,12 +45,15 @@ export default function AdminLogin() {
 
         setIsLoading(true)
         try {
-            console.log(formData)
             const res = await login(formData.email, formData.password)
-            console.log(res)
-            contextLogin(res.token, res.user)
-            navigate('/admin')
-            showToast("Login successful", { type: "success", duration: 3000 })
+            // The response from your API contains 'user' and 'accessToken'
+            if (res.user && res.accessToken) {
+                contextLogin(res.accessToken, res.user)
+                navigate('/admin')
+                showToast("Login successful", { type: "success", duration: 3000 })
+            } else {
+                throw new Error("Login response did not include user or token.");
+            }
         } catch (err) {
             const message = err?.response?.data?.error || "Invalid admin credentials"
             setErrors({ general: message })
