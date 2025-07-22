@@ -58,7 +58,7 @@ export default function Header() {
               <Link to="/posts/new">
                 <Button className="bg-orange-500 hover:bg-orange-600 text-white">
                   <Plus className="h-4 w-4 mr-2" />
-                  Create Post
+                  Tạo bài viết
                 </Button>
               </Link>
               {user.username ? (

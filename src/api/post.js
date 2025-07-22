@@ -46,4 +46,4 @@ export const increaseView = (id) => {
 // Lấy bài post theo tag
 export const getPostsByTag = (tag) => {
   return axiosClient.get(`/posts/tag/${tag}`);
-}; 
+};
