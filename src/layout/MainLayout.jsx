@@ -1,7 +1,7 @@
 import { Outlet } from "react-router"
 import Header from "../components/Header"
 import { CategoriesSidebar } from "../components/CategoriesSidebar"
-import { TrendingSidebar } from "../components/TrendingSidebar"
+// import { TrendingSidebar } from "../components/TrendingSidebar"
 import { CategoryProvider } from "../context/CategoryContext"
 import { useCategory } from "../hooks/useCategory"
 
@@ -21,14 +21,14 @@ const MainLayoutContent = () => {
         </div>
 
         {/* Main content area - 7 columns, fixed width */}
-        <div className="col-span-9">
+        <div className="col-span-14">
           <Outlet />
         </div>
 
         {/* Fixed width sidebar - 3 columns */}
-        <div className="col-span-5">
+        {/* <div className="col-span-5">
           <TrendingSidebar />
-        </div>
+        </div> */}
       </div>
     </div>
   )
