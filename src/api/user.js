@@ -25,6 +25,11 @@ export const getCurrentUser = async () => {
     return response.data
 }
 
+export const updateUserStatus = async (id, status) => {
+    const response = await axiosClient.patch(`/users/${id}/status`, { status });
+    return response.data;
+}
+
 export const getUserFavoritePosts = async () => {
     const response = await axiosClient.get('/users/me/favorites')
     return response.data
@@ -38,6 +43,11 @@ export const addToFavorites = async (postId) => {
 export const removeFromFavorites = async (postId) => {
     const response = await axiosClient.delete(`/users/me/favorites/${postId}`)
     return response.data
+}
+
+export const getCurrentUserPosts = async () => {
+    const response = await axiosClient.get('/users/me/posts');
+    return response.data;
 }
 
 export async function uploadAvatarToFirebase(file, userId) {

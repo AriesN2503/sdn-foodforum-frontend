@@ -13,10 +13,10 @@ const mockComments = [
 export default function Home() {
     const { selectedCategory } = useCategory()
     const [isCommentsOpen, setIsCommentsOpen] = useState(false)
-    const [selectedPostId, setSelectedPostId] = useState(null)
     const [newComment, setNewComment] = useState("")
     const [replyingTo, setReplyingTo] = useState(null)
     const [replyText, setReplyText] = useState("")
+    const [activeBadge, setActiveBadge] = useState("Hot")
     const [posts, setPosts] = useState([])
     const [loading, setLoading] = useState(true)
 
@@ -89,10 +89,8 @@ export default function Home() {
 
     // Bỏ useEffect này vì không còn biến categories
 
-    const handleCommentClick = (postId) => {
-        setSelectedPostId(postId)
+    const handleCommentClick = () => {
         setIsCommentsOpen(true)
-        console.log(selectedPostId)
     }
 
     return (
@@ -100,7 +98,8 @@ export default function Home() {
             <PostFeed
                 posts={posts}
                 onCommentClick={handleCommentClick}
-                selectedCategory={selectedCategory}
+                activeBadge={activeBadge}
+                onBadgeChange={setActiveBadge}
                 loading={loading}
                 searchTerm=""
             />
@@ -108,18 +107,16 @@ export default function Home() {
             <CommentsModal
                 isOpen={isCommentsOpen}
                 onClose={() => setIsCommentsOpen(false)}
-                comments={mockComments}
+                comments={[]}
                 newComment={newComment}
                 onNewCommentChange={setNewComment}
                 onPostComment={() => {
-                    console.log("Posting comment:", newComment)
                     setNewComment("")
                 }}
                 replyingTo={replyingTo}
                 replyText={replyText}
                 onReply={setReplyingTo}
                 onPostReply={() => {
-                    console.log("Posting reply:", replyText)
                     setReplyText("")
                     setReplyingTo(null)
                 }}
