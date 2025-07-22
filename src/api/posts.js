@@ -1,10 +1,37 @@
 import axiosClient from './axiosClient';
 
 const postsApi = {
-    // Get all posts
-    getAllPosts: async () => {
+    // Get all posts with pagination, search, sort, and filters
+    getAllPosts: async (params = {}) => {
         try {
-            const response = await axiosClient.get('/posts');
+            const {
+                page = 1,
+                limit = 10,
+                search = '',
+                sort = 'newest',
+                categorySlugs = '',
+                maxTotalTime = '',
+                authorUsername = ''
+            } = params;
+
+            console.log('params: ', params);
+
+            // Build query string
+            const queryParams = new URLSearchParams();
+            if (page) queryParams.append('page', page);
+            if (limit) queryParams.append('limit', limit);
+            if (search) queryParams.append('search', search);
+            if (sort) queryParams.append('sort', sort);
+            if (categorySlugs) queryParams.append('categorySlugs', categorySlugs);
+            if (maxTotalTime) queryParams.append('maxTotalTime', maxTotalTime);
+            if (authorUsername) queryParams.append('authorUsername', authorUsername);
+
+            const queryString = queryParams.toString();
+            const url = `/posts${queryString ? `?${queryString}` : ''}`;
+
+            console.log('url: ', url);
+            
+            const response = await axiosClient.get(url);
             return response.data;
         } catch (error) {
             console.error('Error fetching posts:', error);
@@ -78,13 +105,13 @@ const postsApi = {
         }
     },
 
-    // Get posts by filter (hot, new, top)
-    getPostsByFilter: async (filter) => {
+    // Get a single post by slug
+    getPostBySlug: async (slug) => {
         try {
-            const response = await axiosClient.get(`/posts/filter?filter=${filter}`);
+            const response = await axiosClient.get(`posts/slugs/${slug}`);
             return response.data;
         } catch (error) {
-            console.error('Error fetching filtered posts:', error);
+            console.error('Error fetching post by slug:', error);
             throw error;
         }
     }

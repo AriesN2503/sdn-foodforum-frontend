@@ -1,7 +1,7 @@
 import { ChefHat } from "lucide-react"
 import { Link } from "react-router"
 
-export function AuthLayout({ children, title, subtitle }) {
+export default function AuthLayout({ children, title, subtitle }) {
     return (
         <div
             className="w-full min-h-screen bg-cover bg-center"

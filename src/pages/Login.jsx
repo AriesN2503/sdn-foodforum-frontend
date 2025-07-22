@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { Eye, EyeOff, Mail, Lock } from "lucide-react"
 import { Link, useNavigate } from "react-router"
-import { AuthLayout } from "../layout/AuthLayout"
+import { AuthLayout } from "../layout"
 import { Label } from "../components/ui/label"
 import { Input } from "../components/ui/input"
 import { Button } from "../components/ui/button"
@@ -12,6 +12,7 @@ import { jwtDecode } from "jwt-decode"
 import { useAuth } from "../hooks/useAuth"
 
 export default function Login() {
+    
     const navigate = useNavigate()
     const [formData, setFormData] = useState({
         email: "",
@@ -73,18 +74,9 @@ export default function Login() {
                     console.error('JWT decode error:', err);
                 }
             }
+
             // Store user and token in localStorage for AuthContext compatibility
-            localStorage.setItem(
-                AUTH_STORAGE_KEY,
-                JSON.stringify({
-                    user,
-                    token: data.accessToken,
-                })
-            )
-            // Optionally call context login if needed
-            if (login) {
-                login(data.accessToken, user)
-            }
+            login(data.accessToken, user)
             navigate("/")
         } catch (err) {
             setErrors({ general: err?.response?.data?.error || err.message || "Invalid email or password" })

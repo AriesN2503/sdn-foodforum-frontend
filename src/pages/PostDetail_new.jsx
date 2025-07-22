@@ -224,10 +224,10 @@ export default function PostDetail() {
             <div className="max-w-4xl mx-auto p-6">
                 <Card>
                     <CardContent className="p-8 text-center">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Post Not Found</h2>
+                        <h2 className="text-2xl font-bold text-gray-800 mb-4">Không tìm thấy bài biết</h2>
                         <p className="text-gray-600 mb-6">{error || "The post you're looking for doesn't exist."}</p>
                         <Button onClick={() => navigate('/')} className="bg-orange-500 hover:bg-orange-600 text-white !cursor-pointer">
-                            Go Back Home
+                            Quay về trang chủ 
                         </Button>
                     </CardContent>
                 </Card>

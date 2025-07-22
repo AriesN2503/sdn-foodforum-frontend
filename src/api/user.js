@@ -1,6 +1,4 @@
-import axiosClient from './axiosClient'
-import { storage } from '../lib/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import axiosClient from './axiosClient';
 
 export const getUsers = async () => {
     const response = await axiosClient.get('/users')
@@ -58,3 +56,9 @@ export async function uploadAvatarToFirebase(file, userId) {
     await uploadBytes(avatarRef, file);
     return await getDownloadURL(avatarRef);
 }
+
+
+
+export const getMe = () => axiosClient.get('/users/me');
+export const getUserProfile = (username) => axiosClient.get(`/users/profile/${username}`);
+

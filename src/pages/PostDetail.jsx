@@ -1,219 +1,226 @@
-import { useEffect, useState } from "react"
-import { useParams, useNavigate } from "react-router"
-import { MessageCircle, Share, Bookmark, ChevronUp, ChevronDown, ArrowLeft } from "lucide-react"
-import { Button } from "../components/ui/button"
-import { Card, CardContent } from "../components/ui/card"
+import { useState, useEffect } from "react"
+import { useParams, Link } from "react-router-dom"
+import postsApi from "../api/posts"
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
-import { getPostById } from "../api/post"
-import { CommentItem } from "../components/CommentItem"
-import Header from "../components/Header"
+import { Button } from "../components/ui/button"
+import { ArrowLeft, Home, ChevronUp, ChevronDown } from "lucide-react"
+import { useToast } from "../context/ToastContext"
+import PostStats from "../components/PostStats"
+import CommentsSection from '../components/CommentsSection';
+import { upvotePost, downvotePost } from '../api/votes';
+
+function formatDate(dateStr) {
+    if (!dateStr) return "";
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("vi-VN", { year: "numeric", month: "2-digit", day: "2-digit" });
+}
 
 export default function PostDetail() {
-  const { id } = useParams()
-  const navigate = useNavigate()
-  const [post, setPost] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-
-  // Bình luận (có thể fetch từ API nếu có, tạm thời để mảng rỗng)
-  const [comments, setComments] = useState([])
-  const [newComment, setNewComment] = useState("")
+    // State cho vote
+    const [upvotesCount, setUpvotesCount] = useState(0);
+    const [downvotesCount, setDownvotesCount] = useState(0);
+    const [userVote, setUserVote] = useState(null); // 'upvote' | 'downvote' | null
+    const [loadingVote, setLoadingVote] = useState(false);
+    const { slug } = useParams();
+    const [post, setPost] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const { toast } = useToast();
 
   useEffect(() => {
-    setLoading(true)
-    setError("")
-    getPostById(id)
-      .then(res => {
-        setPost(res.data)
-        setLoading(false)
-      })
-      .catch(() => {
-        setError("Không tìm thấy bài viết hoặc có lỗi xảy ra.")
-        setLoading(false)
-      })
-  }, [id])
+    const fetchPost = async () => {
+            setLoading(true);
+            setError("");
+            try {
+                const data = await postsApi.getPostBySlug(slug);
+                setPost(data);
+                setUpvotesCount(data.upvotes?.length || 0);
+                setDownvotesCount(data.downvotes?.length || 0);
+                // Nếu backend trả về trạng thái vote của user, setUserVote(data.userVote)
+            } catch {
+                setError("Không tìm thấy bài viết hoặc có lỗi xảy ra.");
+      } finally {
+                setLoading(false);
+            }
+        };
+        fetchPost();
+    }, [slug]);
+
+    const handleUpvote = async () => {
+        if (loadingVote || !post?._id) return;
+        setLoadingVote(true);
+        try {
+            const res = await upvotePost(post._id);
+            setUpvotesCount(res.data.upvotes);
+            setDownvotesCount(res.data.downvotes);
+            setUserVote(res.data.userVote || (userVote === "upvote" ? null : "upvote"));
+        } finally {
+            setLoadingVote(false);
+        }
+    };
+
+    const handleDownvote = async () => {
+        if (loadingVote || !post?._id) return;
+        setLoadingVote(true);
+        try {
+            const res = await downvotePost(post._id);
+            setUpvotesCount(res.data.upvotes);
+            setDownvotesCount(res.data.downvotes);
+            setUserVote(res.data.userVote || (userVote === "downvote" ? null : "downvote"));
+        } finally {
+            setLoadingVote(false);
+        }
+    };
+
+    console.log('post', post)
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto p-8 text-center text-lg text-gray-500">Đang tải bài viết...</div>
-    )
-  }
-  if (error || !post) {
-    return (
-      <div className="max-w-4xl mx-auto p-6">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">Không tìm thấy bài viết</h2>
-            <p className="text-gray-600 mb-6">Bài viết bạn tìm không tồn tại hoặc đã bị xóa.</p>
-            <Button onClick={() => navigate('/')} className="bg-orange-500 hover:bg-orange-600 text-white !cursor-pointer">
-              Quay về trang chủ
-            </Button>
-          </CardContent>
-        </Card>
+            <div className="container mx-auto px-4 py-8">
+                <div className="animate-pulse">
+                    <div className="h-8 bg-gray-200 rounded w-1/3 mb-4"></div>
+                    <div className="h-64 bg-gray-200 rounded mb-4"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                </div>
       </div>
     )
   }
 
-  // Xử lý dữ liệu bài viết
-  const {
-    title,
-    content,
-    image,
-    tags = [],
-    ingredients = [],
-    instructions,
-    author,
-    views,
-    createdAt,
-    votes = 0,
-    commentCount = 0,
-  } = post
-
-  // Xử lý ảnh (có thể là mảng hoặc 1 url)
-  const images = Array.isArray(image) ? image : image ? [image] : []
-
-  // Xử lý tên tác giả
-  const authorName = author && typeof author === 'object'
-    ? (typeof author.username === 'string' ? author.username : 'Ẩn danh')
-    : (typeof author === 'string' ? author : 'Ẩn danh')
-
-  // Xử lý ngày đăng
-  const dateStr = createdAt ? new Date(createdAt).toLocaleString('vi-VN') : ''
-
-  // Thêm bình luận mới (UI demo, chưa gọi API)
-  const handlePostComment = () => {
-    if (newComment.trim()) {
-      const comment = {
-        id: Date.now().toString(),
-        author: authorName,
-        content: newComment,
-        timestamp: 'Vừa xong',
-        votes: 0,
-      }
-    }
+    if (error) {
+    return (
+            <div className="container mx-auto px-4 py-8">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-red-600 mb-4">Lỗi</h2>
+                    <p className="text-gray-600 mb-4">{error}</p>
+                    <Link to="/posts/all">
+                        <Button variant="outline">
+                            <Home className="w-4 h-4 mr-2" />
+                            Về tất cả bài viết
+            </Button>
+                    </Link>
+                </div>
+      </div>
+    )
   }
 
-  // Format timestamp
-  const formatTimestamp = (date) => {
-    if (!date) return 'Unknown time'
-    const now = new Date()
-    const postDate = new Date(date)
-    const diffInMinutes = Math.floor((now - postDate) / (1000 * 60))
-
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes} minutes ago`
-    } else if (diffInMinutes < 1440) {
-      return `${Math.floor(diffInMinutes / 60)} hours ago`
-    } else {
-      return `${Math.floor(diffInMinutes / 1440)} days ago`
-    }
+    if (!post) {
+        return (
+            <div className="container mx-auto px-4 py-8">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold text-gray-600 mb-4">Không tìm thấy bài viết</h2>
+                    <Link to="/posts/all">
+                        <Button variant="outline">
+                            <Home className="w-4 h-4 mr-2" />
+                            Về tất cả bài viết
+                        </Button>
+                    </Link>
+                </div>
+            </div>
+        )
   }
 
   return (
-    <>
-      <Header />
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
-        {/* Nút quay lại */}
-        <Button
-          onClick={() => navigate('/')}
-          variant="ghost"
-          className="mb-4 hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Quay về danh sách
-        </Button>
-
-        {/* Nội dung bài viết */}
-        <Card>
-          <CardContent className="p-8">
-            <div className="flex flex-col md:flex-row items-start md:space-x-6">
-              {/* Ảnh lớn */}
-              {images.length > 0 && (
-                <div className="mb-6 md:mb-0 md:w-2/5 w-full flex flex-col gap-3">
-                  {images.map((url, idx) => (
-                    <img
-                      key={idx}
-                      src={url}
-                      alt={`Ảnh món ăn ${idx + 1}`}
-                      className="rounded-lg object-cover w-full max-h-[350px] border border-orange-100 shadow"
-                    />
-                  ))}
-                </div>
-              )}
-              {/* Thông tin bài viết */}
-              <div className="flex-1 w-full">
-                <div className="flex flex-wrap items-center gap-2 mb-2">
-                  {tags.map((tag, idx) => (
-                    <Badge key={idx} variant="outline" className="text-orange-500 border-orange-500 px-3 py-1 text-sm">{tag}</Badge>
-                  ))}
-                </div>
-                <h1 className="text-3xl font-bold text-gray-800 mb-4">{title}</h1>
-                <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 mb-4">
-                  <span>Đăng bởi <span className="text-orange-500 font-semibold">{authorName}</span></span>
-                  {dateStr && <span>• {dateStr}</span>}
-                  {typeof views === 'number' && <span>• {views} lượt xem</span>}
-                </div>
-                <div className="flex items-center space-x-4 mb-4">
-                  <Button variant="ghost" size="sm" className="p-1 hover:bg-orange-500 hover:text-white">
-                    <ChevronUp className="h-4 w-4" />
-                  </Button>
-                  <span className="font-semibold text-gray-700 text-lg">{votes}</span>
-                  <Button variant="ghost" size="sm" className="p-1 hover:bg-orange-500 hover:text-white">
-                    <ChevronDown className="h-4 w-4" />
-                  </Button>
-                  <span className="text-gray-500">• {commentCount} bình luận</span>
-                </div>
-                <h2 className="text-xl font-semibold text-orange-600 mb-2">Mô tả</h2>
-                <p className="text-gray-700 text-base mb-4 whitespace-pre-line">{content}</p>
-                <h2 className="text-xl font-semibold text-orange-600 mb-2">Nguyên liệu</h2>
-                <ul className="list-disc list-inside text-gray-700 mb-4">
-                  {ingredients.map((ing, idx) => (
-                    <li key={idx}>{ing}</li>
-                  ))}
-                </ul>
-                <h2 className="text-xl font-semibold text-orange-600 mb-2">Hướng dẫn</h2>
-                <p className="text-gray-700 text-base whitespace-pre-line">{instructions}</p>
-              </div>
+        <div className="container mx-auto px-4 py-8">
+            {/* Icon điều hướng về trang tất cả bài viết */}
+            <div className="mb-6">
+                <Link to="/posts/all">
+                    <Button variant="ghost" size="sm" className="flex items-center gap-2 hover:bg-orange-50 hover:text-orange-600 transition-colors">
+                        <ArrowLeft className="w-4 h-4" />
+                        <span className="hidden sm:inline">Về tất cả bài viết</span>
+      </Button>
+                </Link>
             </div>
-          </CardContent>
-        </Card>
 
+            <Card className="shadow-lg">
+                <CardHeader className="pb-2">
+                    {/* Tác giả và ngày đăng */}
+                    <div className="flex flex-col items-end mb-4 mr-4">
+                        <div className="flex items-center gap-2 mb-1">
+                            {post.author?.profilePicture && (
+                                <img src={post.author.profilePicture} alt={post.author.username} className="w-8 h-8 rounded-full object-cover border" />
+                            )}
+                            <span className="font-medium text-gray-700">{post.author?.username || "Ẩn danh"}</span>
+              </div>
+                        <span className="text-xs text-gray-500">Đăng ngày {formatDate(post.createdAt)}</span>
+                    </div>
+
+                    <CardTitle className="text-3xl font-bold text-[#FF6900] text-center mb-4">{post.title}</CardTitle>
+
+                    {/* Danh mục */}
+                    <div className="flex flex-wrap gap-2 justify-center ">
+                        {post.categories && post.categories.map((cat) => (
+                            <Badge key={cat._id} variant="outline" className="flex items-center gap-1 border border-orange-200 bg-orange-50 px-2 py-1">
+
+                                <span className="text-orange-700 font-medium">{cat.name}</span>
+                            </Badge>
+                        ))}
+                </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-col items-center mb-6">
+                        {post.thumbnailUrl && <img src={post.thumbnailUrl} alt={post.title} className="rounded-2xl w-full max-w-xl object-cover mb-4 shadow" />}
+                        <div className="text-lg text-gray-700 mb-4 mt-2 text-center font-medium">{post.description}</div>
+                        <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-2 justify-center">
+                            <span>⏱️ <b>Chuẩn bị:</b> {post.prepTimeMinutes} phút</span>
+                            <span>🍳 <b>Nấu:</b> {post.cookTimeMinutes} phút</span>
+                            <span>👨‍👩‍👧‍👦 <b>Khẩu phần:</b> {post.servings}</span>
+                </div>
+                        
+                        {/* Thống kê bài viết + Vote */}
+                        <div className="mt-4 flex items-center gap-6 justify-center">
+                            <PostStats 
+                                viewsCount={post.viewsCount || 0}
+                                upvotes={post.upvotes || []}
+                                downvotes={post.downvotes || []}
+                                commentCount={post.comments?.length || 0}
+                                className="justify-center"
+                            />
+                        </div>
+            </div>
+
+                    {/* Nguyên liệu */}
+                    <div className="mb-8">
+                        <h3 className="text-xl font-semibold text-orange-600 mb-3">Nguyên liệu</h3>
+                        <ul className="space-y-3">
+                            {post.ingredients && post.ingredients.map((ing, idx) => (
+                                <li key={ing._id || idx} className="flex items-center gap-3 bg-orange-50 rounded-lg px-3 py-2">
+                                    {ing.imageUrl && <img src={ing.imageUrl} alt={ing.name} className="w-10 h-10 object-cover rounded-lg border" />}
+                                    <span className="font-medium text-gray-800">{ing.name}</span>
+                                    <span className="text-gray-500">({ing.quantity})</span>
+                                </li>
+                            ))}
+                        </ul>
+          </div>
+
+                    {/* Hướng dẫn */}
+          <div className="mb-8">
+                        <h3 className="text-xl font-semibold text-orange-600 mb-3">Hướng dẫn</h3>
+                        <ol className="space-y-6">
+                            {post.instructions && post.instructions.map((ins, idx) => (
+                                <li key={ins._id || idx} className="flex gap-4 items-start bg-gray-50 rounded-lg px-3 py-3">
+                                    <span className="flex-shrink-0 w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center text-lg font-bold mt-1 shadow">{ins.stepNumber}</span>
+                                    <div className="flex-1">
+                                        <div className="text-gray-800 mb-2 font-medium">{ins.stepDescription}</div>
+                                        {ins.imageUrl && <img src={ins.imageUrl} alt={"Bước " + ins.stepNumber} className="w-40 h-28 object-cover rounded-lg border" />}
+            </div>
+                                </li>
+                            ))}
+                        </ol>
+          </div>
+
+                    {/* Ghi chú */}
+                    {post.notes && (
+                        <div className="mb-4 bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                            <h4 className="text-lg font-semibold text-yellow-700 mb-1">Ghi chú</h4>
+                            <div className="text-gray-700">{post.notes}</div>
+                        </div>
+                    )}
+        </CardContent>
+      </Card>
         {/* Bình luận */}
-        <Card>
-          <CardContent className="p-8">
-            <h2 className="text-2xl font-bold text-gray-800 mb-6">Bình luận</h2>
-            {/* Thêm bình luận */}
-            <div className="mb-8">
-              <textarea
-                value={newComment}
-                onChange={e => setNewComment(e.target.value)}
-                placeholder="Bạn nghĩ gì về bài viết này?"
-                className="w-full p-4 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
-                rows="4"
-              />
-              <div className="flex justify-end mt-3">
-                <Button
-                  onClick={handlePostComment}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                  disabled={!newComment.trim()}
-                >
-                  Đăng bình luận
-                </Button>
-              </div>
-            </div>
-            {/* Danh sách bình luận */}
-            <div className="space-y-6">
-              {comments.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Chưa có bình luận nào. Hãy là người đầu tiên bình luận!</p>
-              ) : (
-                comments.map(comment => (
-                  <CommentItem key={comment.id} comment={comment} />
-                ))
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </>
+        {post._id && <CommentsSection postId={post._id} />}
+    </div>
   )
 }
