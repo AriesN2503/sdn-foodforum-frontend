@@ -328,7 +328,7 @@ export function UserProfile() {
                                         Share your first post to get started!
                                     </p>
                                     <Button
-                                        onClick={() => navigate('/create-post')}
+                                        onClick={() => navigate('/posts/new')}
                                         className="mt-4 bg-orange-500 hover:bg-orange-600"
                                     >
                                         Create Post

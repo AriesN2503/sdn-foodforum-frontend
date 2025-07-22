@@ -105,51 +105,7 @@ const ChatHeader = React.memo(({
                 </div>
             </div>
 
-            <div className="flex items-center gap-1 flex-shrink-0">
-                {/* Action buttons */}
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-8 w-8 p-0"
-                            title="Tùy chọn"
-                            aria-label="Tùy chọn cuộc trò chuyện"
-                        >
-                            <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-48">
-                        {/* Đã xóa menu item Tìm kiếm tin nhắn */}
-                        {!chatInfo.isGroupChat && onViewProfile && (
-                            <DropdownMenuItem onClick={handleViewProfile}>
-                                <Users className="mr-2 h-4 w-4" />
-                                Xem hồ sơ
-                            </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        {chat?.isActive !== false ? (
-                            <DropdownMenuItem onClick={handleArchiveChat}>
-                                <Archive className="mr-2 h-4 w-4" />
-                                Lưu trữ hội thoại
-                            </DropdownMenuItem>
-                        ) : (
-                            <DropdownMenuItem onClick={() => onArchiveChat && onArchiveChat(chat, true)}>
-                                <Archive className="mr-2 h-4 w-4" />
-                                Khôi phục hội thoại
-                            </DropdownMenuItem>
-                        )}
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                            onClick={handleDeleteChat}
-                            className="text-red-600 focus:text-red-600"
-                        >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Xóa hội thoại
-                        </DropdownMenuItem>
-                    </DropdownMenuContent>
-                </DropdownMenu>
-            </div>
+           
         </div>
     );
 });
@@ -193,3 +149,50 @@ ChatHeader.defaultProps = {
 ChatHeader.displayName = 'ChatHeader';
 
 export default ChatHeader; 
+
+
+// <div className="flex items-center gap-1 flex-shrink-0">
+// {/* Action buttons */}
+// <DropdownMenu>
+//     <DropdownMenuTrigger asChild>
+//         <Button
+//             variant="ghost"
+//             size="sm"
+//             className="h-8 w-8 p-0"
+//             title="Tùy chọn"
+//             aria-label="Tùy chọn cuộc trò chuyện"
+//         >
+//             <MoreHorizontal className="h-4 w-4" />
+//         </Button>
+//     </DropdownMenuTrigger>
+//     <DropdownMenuContent align="end" className="w-48">
+//         {/* Đã xóa menu item Tìm kiếm tin nhắn */}
+//         {!chatInfo.isGroupChat && onViewProfile && (
+//             <DropdownMenuItem onClick={handleViewProfile}>
+//                 <Users className="mr-2 h-4 w-4" />
+//                 Xem hồ sơ
+//             </DropdownMenuItem>
+//         )}
+//         <DropdownMenuSeparator />
+//         {chat?.isActive !== false ? (
+//             <DropdownMenuItem onClick={handleArchiveChat}>
+//                 <Archive className="mr-2 h-4 w-4" />
+//                 Lưu trữ hội thoại
+//             </DropdownMenuItem>
+//         ) : (
+//             <DropdownMenuItem onClick={() => onArchiveChat && onArchiveChat(chat, true)}>
+//                 <Archive className="mr-2 h-4 w-4" />
+//                 Khôi phục hội thoại
+//             </DropdownMenuItem>
+//         )}
+//         <DropdownMenuSeparator />
+//         <DropdownMenuItem
+//             onClick={handleDeleteChat}
+//             className="text-red-600 focus:text-red-600"
+//         >
+//             <Trash2 className="mr-2 h-4 w-4" />
+//             Xóa hội thoại
+//         </DropdownMenuItem>
+//     </DropdownMenuContent>
+// </DropdownMenu>
+// </div>
