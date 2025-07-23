@@ -39,7 +39,7 @@ export default function AdminDashboard() {
         email: '',
         password: '',
         role: 'user'
-    }
+    })
     const [isLoading, setIsLoading] = useState(true)
     const [dashboardStats, setDashboardStats] = useState([])
     const [searchTerm, setSearchTerm] = useState("")
@@ -173,7 +173,7 @@ export default function AdminDashboard() {
         logout();
         navigate('/login');
     };
-  
+
     // Add a handler for adding a new user
     const handleAddUser = async () => {
         try {
