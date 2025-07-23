@@ -41,7 +41,7 @@ const AppRoutes = () => {
       />
       <Route path="login" element={<Login />} />
       <Route path="register" element={<Register />} />
-      <Route path='profile' element={<UserProfile />} />
+      <Route path='profile/:id?' element={<UserProfile />} />
       <Route
         path="chat"
         element={

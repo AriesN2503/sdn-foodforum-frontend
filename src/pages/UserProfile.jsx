@@ -24,10 +24,10 @@ import {
     ExternalLink,
     LogOut
 } from "lucide-react"
-import { getCurrentUser, updateUser, getUserFavoritePosts } from "../api/user"
+import { getCurrentUser, updateUser, getUserFavoritePosts, getUserById } from "../api/user"
 import postsApi from "../api/posts"
 import { useAuth } from "../hooks/useAuth"
-import { useNavigate } from "react-router"
+import { useNavigate, useParams } from "react-router"
 
 // Custom Profile Post Card component
 function ProfilePostCard({ post }) {
@@ -141,56 +141,105 @@ export function UserProfile() {
     const [userPosts, setUserPosts] = useState([])
     const [favoritePosts, setFavoritePosts] = useState([])
     const [activeTab, setActiveTab] = useState("profile")
-    const { setUser, logout } = useAuth()
+    const authContext = useAuth()
+    const { user: currentUser, logout } = authContext
     const navigate = useNavigate()
+    const { id } = useParams()
+    const [isOwnProfile, setIsOwnProfile] = useState(false)
 
     const [profileData, setProfileData] = useState({
         username: "",
         email: "",
-        bio: "",
         phone_number: "",
         avatar: ""
     })
 
-    // Load user data on component mount
+    // Load user data on component mount or when id changes
     useEffect(() => {
-        loadUserData()
-    }, [])
+        const fetchData = async () => {
+            try {
+                await loadUserData();
+            } catch (error) {
+                console.error("Error in useEffect:", error);
+                setError("Failed to load user data. Please try again later.");
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, [id, currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const loadUserData = async () => {
         try {
             setLoading(true)
+            let user;
 
-            // Get current user data
-            const userResponse = await getCurrentUser()
-            const user = userResponse.user
+            // If id is not provided or it's the current user's id, show the current user's profile
+            if (!id || (currentUser && (id === currentUser._id))) {
+                const userResponse = await getCurrentUser()
+                user = userResponse.user
+                setIsOwnProfile(true)
+            } else {
+                // Load another user's profile
+                const userResponse = await getUserById(id)
+                // Check if userResponse is the user object directly or nested in a user property
+                user = userResponse.user || userResponse
+                setIsOwnProfile(currentUser && user?._id === currentUser._id)
+            }
+
+            // Validate that we have a user object before proceeding
+            if (!user) {
+                throw new Error('User data not found')
+            }
+
+            // Ensure user has _id property for API calls
+            if (!user._id && user.id) {
+                user._id = user.id;
+            }
 
             setUserData(user)
             setProfileData({
                 username: user.username || "",
                 email: user.email || "",
-                bio: user.bio || "",
                 phone_number: user.phone_number || "",
                 avatar: user.avatar || ""
             })
 
             // Load user's posts
-            if (user.id) {
+            if (user._id) {
                 try {
-                    const posts = await postsApi.getPostsByUser(user.id)
-                    setUserPosts(Array.isArray(posts) ? posts : [])
+                    const posts = await postsApi.getPostsByUser(user._id)
+                    const postsArray = Array.isArray(posts) ? posts : []
+                    setUserPosts(postsArray)
+
+                    // Update the postsCount in userData to ensure consistency
+                    setUserData(prevData => ({
+                        ...prevData,
+                        postsCount: postsArray.length
+                    }))
                 } catch (error) {
                     console.error('Error loading user posts:', error)
                     setUserPosts([])
                 }
             }
 
-            // Load favorite posts
-            try {
-                const favoritesResponse = await getUserFavoritePosts()
-                setFavoritePosts(Array.isArray(favoritesResponse.posts) ? favoritesResponse.posts : [])
-            } catch (error) {
-                console.error('Error loading favorite posts:', error)
+            // Load favorite posts only if viewing own profile
+            if (isOwnProfile) {
+                try {
+                    const favoritesResponse = await getUserFavoritePosts()
+                    const favoritesArray = Array.isArray(favoritesResponse.posts) ? favoritesResponse.posts : []
+                    setFavoritePosts(favoritesArray)
+
+                    // Update the favoritesCount in userData to ensure consistency
+                    setUserData(prevData => ({
+                        ...prevData,
+                        favoritesCount: favoritesArray.length
+                    }))
+                } catch (error) {
+                    console.error('Error loading favorite posts:', error)
+                    setFavoritePosts([])
+                }
+            } else {
                 setFavoritePosts([])
             }
 
@@ -213,17 +262,37 @@ export function UserProfile() {
         try {
             setSaving(true)
 
+            // Make sure we have a valid user ID
+            const userId = userData?._id || (currentUser && currentUser._id);
+
+            if (!userId) {
+                throw new Error('User ID not found. Cannot update profile.');
+            }
+
             const updateData = {
                 username: profileData.username,
-                bio: profileData.bio,
                 phone_number: profileData.phone_number
             }
 
-            await updateUser(userData.id, updateData)
+            await updateUser(userId, updateData)
 
             // Update local state
             setUserData(prev => ({ ...prev, ...updateData }))
-            setUser(prev => ({ ...prev, ...updateData }))
+
+            // Update auth context user data if setUser function exists
+            if (authContext && typeof authContext.setUser === 'function') {
+                authContext.setUser(prev => ({ ...prev, ...updateData }))
+
+                // Also update localStorage to persist changes
+                const stored = localStorage.getItem("foodforum_auth")
+                if (stored) {
+                    const authData = JSON.parse(stored)
+                    localStorage.setItem("foodforum_auth", JSON.stringify({
+                        ...authData,
+                        user: { ...authData.user, ...updateData }
+                    }))
+                }
+            }
 
             setIsEditing(false)
             setError(null)
@@ -256,7 +325,7 @@ export function UserProfile() {
                 <Card>
                     <CardContent className="p-6 text-center">
                         <p className="text-red-500 mb-4">{error}</p>
-                        <Button onClick={loadUserData}>Try Again</Button>
+                        <Button onClick={() => window.location.reload()}>Try Again</Button>
                     </CardContent>
                 </Card>
             </div>
@@ -287,7 +356,7 @@ export function UserProfile() {
                                     {userData?.username?.charAt(0)?.toUpperCase() || 'U'}
                                 </AvatarFallback>
                             </Avatar>
-                            {isEditing && (
+                            {isEditing && isOwnProfile && (
                                 <Button
                                     size="sm"
                                     className="absolute bottom-0 right-0 rounded-full p-2"
@@ -310,57 +379,42 @@ export function UserProfile() {
                                             placeholder="Username"
                                         />
                                     ) : (
-                                        <h1 className="text-3xl font-bold">{userData?.username}</h1>
+                                        <h1 className="text-3xl font-bold">{userData?.username || 'User'}</h1>
                                     )}
-                                    <p className="text-gray-600">{userData?.email}</p>
+                                    <p className="text-gray-600">{userData?.email || 'No email provided'}</p>
                                     <div className="flex items-center gap-2 mt-2">
                                         <Calendar className="w-4 h-4" />
                                         <span className="text-sm text-gray-500">
-                                            Joined {formatDate(userData?.createdAt)}
+                                            Joined {userData?.createdAt ? formatDate(userData.createdAt) : 'Unknown date'}
                                         </span>
                                     </div>
                                 </div>
-                                <Button
-                                    onClick={isEditing ? handleSave : () => setIsEditing(true)}
-                                    disabled={saving}
-                                    className="ml-4"
-                                >
-                                    {saving ? (
-                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
-                                    ) : isEditing ? (
-                                        <Save className="w-4 h-4 mr-2" />
-                                    ) : (
-                                        <Edit className="w-4 h-4 mr-2" />
-                                    )}
-                                    {saving ? 'Saving...' : isEditing ? 'Save' : 'Edit Profile'}
-                                </Button>
-                            </div>
-
-                            {/* Bio */}
-                            <div>
-                                {isEditing ? (
-                                    <Textarea
-                                        value={profileData.bio}
-                                        onChange={(e) => handleInputChange('bio', e.target.value)}
-                                        placeholder="Tell us about yourself..."
-                                        className="mt-2"
-                                        rows={3}
-                                    />
-                                ) : (
-                                    <p className="text-gray-700">
-                                        {userData?.bio || "No bio available"}
-                                    </p>
+                                {isOwnProfile && (
+                                    <Button
+                                        onClick={isEditing ? handleSave : () => setIsEditing(true)}
+                                        disabled={saving}
+                                        className="ml-4"
+                                    >
+                                        {saving ? (
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2" />
+                                        ) : isEditing ? (
+                                            <Save className="w-4 h-4 mr-2" />
+                                        ) : (
+                                            <Edit className="w-4 h-4 mr-2" />
+                                        )}
+                                        {saving ? 'Saving...' : isEditing ? 'Save' : 'Edit Profile'}
+                                    </Button>
                                 )}
                             </div>
 
                             {/* Stats */}
                             <div className="flex gap-6 text-sm">
                                 <div className="text-center">
-                                    <div className="font-bold text-lg">{userData?.postsCount || 0}</div>
+                                    <div className="font-bold text-lg">{userPosts.length || 0}</div>
                                     <div className="text-gray-500">Posts</div>
                                 </div>
                                 <div className="text-center">
-                                    <div className="font-bold text-lg">{userData?.favoritesCount || 0}</div>
+                                    <div className="font-bold text-lg">{isOwnProfile ? (favoritePosts.length || 0) : (userData?.favoritesCount || 0)}</div>
                                     <div className="text-gray-500">Favorites</div>
                                 </div>
                             </div>
@@ -377,10 +431,12 @@ export function UserProfile() {
 
             {/* Tabs for Posts and Favorites */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className={`grid w-full ${isOwnProfile ? 'grid-cols-3' : 'grid-cols-2'}`}>
                     <TabsTrigger value="profile">Profile</TabsTrigger>
-                    <TabsTrigger value="posts">My Posts ({userPosts.length})</TabsTrigger>
-                    <TabsTrigger value="favorites">Favorites ({favoritePosts.length})</TabsTrigger>
+                    <TabsTrigger value="posts">Posts ({userPosts.length || 0})</TabsTrigger>
+                    {isOwnProfile && (
+                        <TabsTrigger value="favorites">Favorites ({favoritePosts.length || 0})</TabsTrigger>
+                    )}
                 </TabsList>
 
                 <TabsContent value="profile">
@@ -391,7 +447,7 @@ export function UserProfile() {
                         <CardContent className="space-y-4">
                             <div>
                                 <label className="text-sm font-medium">Phone Number</label>
-                                {isEditing ? (
+                                {isEditing && isOwnProfile ? (
                                     <Input
                                         value={profileData.phone_number}
                                         onChange={(e) => handleInputChange('phone_number', e.target.value)}
@@ -419,7 +475,7 @@ export function UserProfile() {
                 <TabsContent value="posts">
                     <Card>
                         <CardHeader>
-                            <CardTitle>My Posts</CardTitle>
+                            <CardTitle>{isOwnProfile ? "My Posts" : `${userData?.username}'s Posts`}</CardTitle>
                         </CardHeader>
                         <CardContent>
                             {userPosts.length > 0 ? (
@@ -432,15 +488,19 @@ export function UserProfile() {
                                 <div className="text-center py-8">
                                     <MessageSquare className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                                     <p className="text-gray-500">No posts yet</p>
-                                    <p className="text-sm text-gray-400">
-                                        Share your first post to get started!
-                                    </p>
-                                    <Button
-                                        onClick={() => navigate('/create-post')}
-                                        className="mt-4 bg-orange-500 hover:bg-orange-600"
-                                    >
-                                        Create Post
-                                    </Button>
+                                    {isOwnProfile && (
+                                        <>
+                                            <p className="text-sm text-gray-400">
+                                                Share your first post to get started!
+                                            </p>
+                                            <Button
+                                                onClick={() => navigate('/create-post')}
+                                                className="mt-4 bg-orange-500 hover:bg-orange-600"
+                                            >
+                                                Create Post
+                                            </Button>
+                                        </>
+                                    )}
                                 </div>
                             )}
                         </CardContent>
@@ -479,18 +539,20 @@ export function UserProfile() {
                 </TabsContent>
             </Tabs>
 
-            {/* Logout Button */}
-            <Button
-                variant="outline"
-                className="w-full mt-4 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
-                onClick={() => {
-                    logout();
-                    navigate('/login');
-                }}
-            >
-                <LogOut className="w-4 h-4 mr-2" />
-                Logout
-            </Button>
+            {/* Logout Button - only show on own profile */}
+            {isOwnProfile && (
+                <Button
+                    variant="outline"
+                    className="w-full mt-4 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => {
+                        logout();
+                        navigate('/login');
+                    }}
+                >
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                </Button>
+            )}
         </div>
     )
 }
