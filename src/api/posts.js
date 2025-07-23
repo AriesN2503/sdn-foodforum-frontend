@@ -12,6 +12,28 @@ const postsApi = {
         }
     },
 
+    // Search posts
+    searchPosts: async (query) => {
+        try {
+            // On a real backend, this would be a proper search endpoint
+            // But for now, we'll fetch all posts and filter client-side
+            const response = await axiosClient.get('/posts');
+            const posts = response.data;
+
+            // Filter posts that contain the search query in title or content
+            const searchTermLower = query.toLowerCase();
+            return posts.filter(post =>
+                post.title?.toLowerCase().includes(searchTermLower) ||
+                post.content?.toLowerCase().includes(searchTermLower) ||
+                post.author?.username?.toLowerCase().includes(searchTermLower) ||
+                post.category?.name?.toLowerCase().includes(searchTermLower)
+            );
+        } catch (error) {
+            console.error('Error searching posts:', error);
+            throw error;
+        }
+    },
+
     // Get a single post by ID
     getPostById: async (id) => {
         try {

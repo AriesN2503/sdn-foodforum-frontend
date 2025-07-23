@@ -177,11 +177,25 @@ export function PostCard({
           <h3 className="text-xl font-semibold text-gray-800 mb-4 hover:text-orange-600 transition-colors">
             {title}
           </h3>
-          {(imageUrl || (images && images.length > 0)) && (
+          {(imageUrl || (images && images.length > 0)) ? (
             <div className="mb-4">
               <img
                 src={images && images.length > 0 ? images[0].url : imageUrl}
-                alt="Post image"
+                alt={title || "Post image"}
+                width={200}
+                height={120}
+                className="rounded-lg object-cover w-full h-[400px]"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/images/food_placeholder.jpg";
+                }}
+              />
+            </div>
+          ) : (
+            <div className="mb-4">
+              <img
+                src="/images/food_placeholder.jpg"
+                alt="Default post image"
                 width={200}
                 height={120}
                 className="rounded-lg object-cover w-full h-[400px]"

@@ -69,7 +69,7 @@ export default function Home() {
     // Load categories and posts on component mount
     useEffect(() => {
         loadCategories()
-        loadPosts("Hot")
+        loadPosts("New")
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
     // Load posts when selected category changes

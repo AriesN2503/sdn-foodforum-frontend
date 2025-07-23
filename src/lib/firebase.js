@@ -15,10 +15,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Only import analytics in browser
-let analytics = null;
+// Using underscore prefix to indicate intentionally unused variable
+let _analytics = null;
 if (typeof window !== "undefined") {
     import("firebase/analytics").then(({ getAnalytics }) => {
-        analytics = getAnalytics(app);
+        _analytics = getAnalytics(app);
     });
 }
 
