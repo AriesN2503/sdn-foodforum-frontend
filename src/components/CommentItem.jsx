@@ -46,13 +46,11 @@ export function CommentItem({
       try {
         const stored = localStorage.getItem("foodforum_auth")
         if (stored) {
-          const userData = JSON.parse(stored).user
-          if (userData) {
-            console.log('Retrieved user from localStorage:', userData)
-          }
+          // User data exists in localStorage
+          JSON.parse(stored).user
         }
-      } catch (error) {
-        console.error('Error retrieving user from localStorage:', error)
+      } catch {
+        // Error handling for localStorage retrieval
       }
     }
   }, [user])
@@ -62,8 +60,8 @@ export function CommentItem({
     try {
       const stored = localStorage.getItem("foodforum_auth")
       return stored ? JSON.parse(stored).user : null
-    } catch (e) {
-      console.error('Error parsing stored user data', e)
+    } catch {
+      // Error handling for stored user data parsing
       return null
     }
   })()
@@ -96,8 +94,7 @@ export function CommentItem({
     ))
   )
 
-  // Compact debug console log
-  console.log(`Comment: ${comment.id?.substring(0, 8)}, Author: ${comment.author || comment.user_id?.username}, isOwner: ${isCommentOwner}`)  // Format timestamp for display
+  // Format timestamp for display
   const formatTimestamp = (date) => {
     if (!date) return 'Unknown time'
     const now = new Date()
@@ -149,8 +146,7 @@ export function CommentItem({
       // Reset state
       setLocalReplyText("")
       setIsReplying(false)
-    } catch (error) {
-      console.error("Error posting reply:", error)
+    } catch {
       toast({
         title: "Error",
         description: "Failed to post your reply. Please try again.",
@@ -169,8 +165,8 @@ export function CommentItem({
           const data = await votesApi.getVotes(comment.id)
           setVoteData(data)
           setNetVotes((data.upvotes || 0) - (data.downvotes || 0))
-        } catch (error) {
-          console.warn('Failed to fetch vote data:', error)
+        } catch {
+          // Failed to fetch vote data
         }
       }
     }
@@ -285,7 +281,6 @@ export function CommentItem({
         }
       }
     } catch (error) {
-      console.error('Error voting:', error)
       // Show error toast notification
       toast({
         title: "Error",
@@ -326,8 +321,7 @@ export function CommentItem({
       if (onCommentAdded) {
         onCommentAdded()
       }
-    } catch (error) {
-      console.error("Error updating comment:", error)
+    } catch {
       toast({
         title: "Error",
         description: "Failed to update your comment. Please try again.",
@@ -359,8 +353,7 @@ export function CommentItem({
       if (onCommentAdded) {
         onCommentAdded()
       }
-    } catch (error) {
-      console.error("Error deleting comment:", error)
+    } catch {
       toast({
         title: "Error",
         description: "Failed to delete your comment. Please try again.",
