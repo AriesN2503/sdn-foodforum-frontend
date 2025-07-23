@@ -440,21 +440,23 @@ export default function PostDetail() {
               </div>
               <h1 className="text-3xl font-bold text-gray-800 mb-6">{post.title}</h1>
               {/* Display images from both imageUrl (legacy) and images array (new) */}
-              {(post.imageUrl || (post.images && post.images.length > 0)) && (
-                <div className="mb-6">
-                  <img
-                    src={post.images && post.images.length > 0 ? post.images[0].url : post.imageUrl}
-                    alt="Post image"
-                    className="rounded-lg object-cover w-full h-[500px]"
-                  />
-                  {/* Show indicator if there are multiple images */}
-                  {post.images && post.images.length > 1 && (
-                    <div className="mt-2 text-sm text-gray-500 text-center">
-                      +{post.images.length - 1} more image{post.images.length > 2 ? 's' : ''}
-                    </div>
-                  )}
-                </div>
-              )}
+              <div className="mb-6">
+                <img
+                  src={post.images && post.images.length > 0 ? post.images[0].url : post.imageUrl || "/images/food_placeholder.jpg"}
+                  alt={post.title || "Post image"}
+                  className="rounded-lg object-cover w-full h-[500px]"
+                  onError={(e) => {
+                    e.target.onerror = null;
+                    e.target.src = "/images/food_placeholder.jpg";
+                  }}
+                />
+                {/* Show indicator if there are multiple images */}
+                {post.images && post.images.length > 1 && (
+                  <div className="mt-2 text-sm text-gray-500 text-center">
+                    +{post.images.length - 1} more image{post.images.length > 2 ? 's' : ''}
+                  </div>
+                )}
+              </div>
               <p className="text-gray-700 text-lg leading-relaxed mb-6">{post.content}</p>
               <div className="flex items-center space-x-6 text-sm text-gray-500 border-t pt-4">
                 <div className="flex items-center space-x-1">
