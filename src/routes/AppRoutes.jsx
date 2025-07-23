@@ -24,10 +24,9 @@ const AppRoutes = () => {
       <Route
         path="moderator"
         element={
-          // <ProtectedRoute requiredRole="moderator">
-          //   <ModeratorDashboard />
-          // </ProtectedRoute>
-          <ModeratorDashboard />
+          <ProtectedRoute requiredRole="moderator">
+            <ModeratorDashboard />
+          </ProtectedRoute>
         }
       />
 
@@ -35,10 +34,9 @@ const AppRoutes = () => {
       <Route
         path="admin"
         element={
-          // <ProtectedRoute requiredRole="admin">
-          //   <AdminDashboard />
-          // </ProtectedRoute>
-          <AdminDashboard />
+          <ProtectedRoute requiredRole="admin">
+            <AdminDashboard />
+          </ProtectedRoute>
         }
       />
       <Route path="login" element={<Login />} />

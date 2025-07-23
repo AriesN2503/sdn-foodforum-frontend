@@ -26,6 +26,19 @@ export const login = async (email, password) => {
     }
 }
 
+export const adminLogin = async (email, password) => {
+    try {
+        const response = await axiosClient.post('/auth/admin/login', { email, password })
+        return response.data
+    } catch (error) {
+        console.error('Admin login error:', error);
+        if (error.response) {
+            console.error('Admin login error response:', error.response.data);
+        }
+        throw error
+    }
+}
+
 export const refreshToken = async () => {
     const response = await axiosClient.post('/auth/refresh-token', {}, { withCredentials: true })
     return response.data

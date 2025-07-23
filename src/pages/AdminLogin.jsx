@@ -1,6 +1,5 @@
 import { Lock, User } from "lucide-react"
 import { useState } from "react"
-import toast from "react-hot-toast"
 import { useNavigate } from "react-router"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
@@ -8,7 +7,8 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { AuthLayout } from "../layout/AuthLayout"
 import { useToast } from "../context/ToastContext"
-import { login } from "../api/auth"
+import { adminLogin } from "../api/auth"
+import { useAuth } from "../hooks/useAuth"
 
 export default function AdminLogin() {
     const navigate = useNavigate()
@@ -37,21 +37,49 @@ export default function AdminLogin() {
         return Object.keys(newErrors).length === 0
     }
 
+    const { login } = useAuth()
+
     const handleSubmit = async (e) => {
         e.preventDefault()
         if (!validateForm()) return
 
         setIsLoading(true)
         try {
-            console.log(formData)
-            const res = await login(formData.email, formData.password)
+            // Use adminLogin specifically for admin authentication
+            const res = await adminLogin(formData.email, formData.password)
             console.log(res)
-            navigate('/admin')
-            showToast("Login successful", { type: "success", duration: 3000 })
-        } catch (err) {
-            const message = err?.response?.data?.error || "Invalid admin credentials"
-            setErrors({ general: message })
-            toast.error(message)
+
+            // Store the user and token in auth context
+            if (res.accessToken && res.user) {
+                // Verify admin role before login
+                if (res.user.role !== 'admin') {
+                    throw new Error('Not an admin account');
+                }
+
+                login(res.accessToken, res.user)
+                navigate('/admin')
+                showToast("Admin login successful", { type: "success", duration: 3000 })
+            }
+        } catch (error) {
+            console.error("Admin login error:", error)
+
+            // Handle different error cases with custom messages
+            let errorMessage;
+
+            if (error.message === 'Not an admin account') {
+                errorMessage = "Access denied: Admin privileges required";
+            } else if (error.response?.data?.error === 'Access denied: Admin privileges required') {
+                errorMessage = "Access denied: This account does not have admin privileges";
+            } else if (error.response?.data?.error === 'User not found') {
+                errorMessage = "User not found. Please check your credentials.";
+            } else if (error.response?.data?.error === 'Invalid credentials') {
+                errorMessage = "Invalid credentials. Please check your email and password.";
+            } else {
+                errorMessage = error.response?.data?.error || "Admin login failed";
+            }
+
+            setErrors({ general: errorMessage });
+            showToast(errorMessage, { type: "error" });
         } finally {
             setIsLoading(false)
         }
