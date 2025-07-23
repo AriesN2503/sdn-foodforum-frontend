@@ -16,32 +16,40 @@ export default function Home() {
     const loadCategories = async () => {
         try {
             const categoriesData = await categoriesApi.getAllCategories()
+            console.log('Categories loaded:', categoriesData)
             setCategories(categoriesData)
+            return categoriesData // Return the data for immediate use
         } catch (error) {
             console.error('Error loading categories:', error)
             setError('Failed to load categories')
+            return [] // Return empty array on error
         }
     }
 
-    const loadPosts = async (filter) => {
+    // Helper function to process posts data and update state
+    const processAndDisplayPosts = (postsData) => {
         try {
-            setLoading(true)
-            let postsData = []
-
-            // Check if filter is a category name or default filter
-            const category = categories.find(cat => cat.name.toLowerCase() === filter.toLowerCase())
-
-            if (category) {
-                postsData = await postsApi.getPostsByCategory(category._id)
-            } else {
-                postsData = await postsApi.getPostsByFilter(filter.toLowerCase())
+            if (!postsData || !Array.isArray(postsData)) {
+                console.error('Invalid posts data received:', postsData)
+                setPosts([])
+                return
             }
 
-            // Filter only approved posts for the home page
-            postsData = postsData.filter(post => post.status === 'approved')
+            // Debug: Log incoming posts before filtering
+            console.log('Processing posts data, count before filtering:', postsData.length)
+
+            // Filter only approved posts for the home page if they have a status field
+            // Otherwise, include all posts (backend might not set status on all posts)
+            const filteredPosts = postsData.filter(post => {
+                // If post has no status field or status is approved, include it
+                const include = !post.status || post.status === 'approved'
+                return include
+            })
+
+            console.log('Posts after filtering:', filteredPosts.length)
 
             // Transform posts to match frontend format
-            const transformedPosts = postsData.map(post => ({
+            const transformedPosts = filteredPosts.map(post => ({
                 id: post._id,
                 title: post.title,
                 content: post.content,
@@ -58,6 +66,78 @@ export default function Home() {
             setPosts(transformedPosts)
             setError(null)
         } catch (error) {
+            console.error('Error processing posts:', error)
+            setError('Failed to process posts data')
+            setPosts([])
+        }
+    }
+
+    // Load posts based on filter type (sorting filter or category filter)
+    const loadPostsWithCategories = async (filter, availableCategories) => {
+        try {
+            console.log('Selected filter/category:', filter)
+            console.log('Provided categories for lookup:', availableCategories)
+
+            // Define special filters that sort posts differently
+            const specialFilters = ['new', 'hot', 'top']
+
+            // Convert to lowercase for case-insensitive comparison
+            const filterLower = filter.toLowerCase()
+
+            let postsData = []
+
+            // First check if it's a special sort filter (new, hot, top)
+            if (specialFilters.includes(filterLower)) {
+                console.log('Using special sort filter:', filterLower)
+                postsData = await postsApi.getPostsByFilter(filterLower)
+                console.log('Posts data from filter:', postsData)
+            } else {
+                // Try to find category by name (only if not a special filter)
+                const category = availableCategories.find(
+                    cat => cat.name.toLowerCase() === filterLower
+                )
+                console.log('Found category object:', category)
+
+                if (category && category._id) {
+                    console.log('Fetching by category ID:', category._id)
+                    try {
+                        postsData = await postsApi.getPostsByCategory(category._id)
+                        console.log('Posts data from category:', postsData)
+                    } catch (categoryError) {
+                        console.error('Error in getPostsByCategory:', categoryError)
+                        setError(`Failed to load posts for category: ${categoryError.message}`)
+                        // Fallback to new filter on error
+                        postsData = await postsApi.getPostsByFilter('new')
+                    }
+                } else {
+                    // Fallback to "new" filter if no category found
+                    console.log('No matching category found, using default filter')
+                    postsData = await postsApi.getPostsByFilter('new')
+                }
+            }
+
+            return postsData
+        } catch (error) {
+            console.error('Error in loadPostsWithCategories:', error)
+            setError(`Failed to load posts: ${error.message}`)
+            return []
+        }
+    }
+
+    const loadPosts = async (filter) => {
+        try {
+            setLoading(true)
+            setError(null) // Clear any previous errors
+
+            // Normalize filter to lowercase to ensure consistency
+            const normalizedFilter = filter?.toLowerCase() || 'new'
+
+            // Use the loadPostsWithCategories function with current categories state
+            let postsData = await loadPostsWithCategories(normalizedFilter, categories)
+
+            // Process and display the loaded posts
+            processAndDisplayPosts(postsData)
+        } catch (error) {
             console.error('Error loading posts:', error)
             setError('Failed to load posts')
             setPosts([])
@@ -68,13 +148,23 @@ export default function Home() {
 
     // Load categories and posts on component mount
     useEffect(() => {
-        loadCategories()
-        loadPosts("New")
+        async function initializeData() {
+            // First load all categories
+            const loadedCategories = await loadCategories()
+            console.log('Categories loaded in useEffect:', loadedCategories)
+
+            // Then load initial posts with the "new" filter (not a category)
+            const postsData = await loadPostsWithCategories("new", loadedCategories)
+            processAndDisplayPosts(postsData)
+        }
+
+        initializeData()
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Load posts when selected category changes
+    // Load posts when selected category or filter changes
     useEffect(() => {
         if (categories.length > 0) {
+            console.log('Category or filter changed, reloading posts with:', selectedCategory)
             loadPosts(selectedCategory)
         }
     }, [selectedCategory, categories]) // eslint-disable-line react-hooks/exhaustive-deps

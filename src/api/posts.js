@@ -74,6 +74,7 @@ const postsApi = {
             return response.data;
         } catch (error) {
             console.error('Error deleting post:', error);
+            // Rethrow to allow components to handle the error
             throw error;
         }
     },
@@ -114,10 +115,15 @@ const postsApi = {
     // Get posts by category
     getPostsByCategory: async (categoryId) => {
         try {
+            console.log('API call to get posts by category:', categoryId);
+            console.log('Request URL:', `/posts/category/${categoryId}`);
             const response = await axiosClient.get(`/posts/category/${categoryId}`);
+            console.log('Response status:', response.status);
+            console.log('Response data:', response.data);
             return response.data;
         } catch (error) {
             console.error('Error fetching posts by category:', error);
+            console.error('Error details:', error.response ? error.response.data : 'No response data');
             throw error;
         }
     },
