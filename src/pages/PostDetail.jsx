@@ -9,6 +9,7 @@ import commentsApi from "../api/comments"
 import votesApi from "../api/votes"
 import { addToFavorites, removeFromFavorites, getCurrentUser } from "../api/user"
 import { useAuth } from "../hooks/useAuth"
+import { useToast } from "../components/ui/use-toast"
 
 function RecipeCard({ recipe }) {
   if (!recipe) return null;
@@ -122,7 +123,7 @@ function CommentComponent({ comment, depth = 0 }) {
 
       // If user already voted with the same type, remove the vote
       if (voteData.userVote === voteType) {
-        await votesApi.removeVote(commentId)
+        await votesApi.removeVote(commentId, 'comment')
         setVoteData(prev => ({
           ...prev,
           userVote: null,
@@ -302,6 +303,7 @@ export default function PostDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { toast } = useToast()
   const [newComment, setNewComment] = useState("")
   const [comments, setComments] = useState([])
   const [post, setPost] = useState(null)
@@ -369,12 +371,19 @@ export default function PostDetail() {
 
       // If user already voted with the same type, remove the vote
       if (voteData.userVote === voteType) {
-        await votesApi.removeVote(id)
+        await votesApi.removeVote(id, 'post')
         setVoteData(prev => ({
           ...prev,
           userVote: null,
           [voteType === 'upvote' ? 'upvotes' : 'downvotes']: Math.max(0, prev[voteType === 'upvote' ? 'upvotes' : 'downvotes'] - 1)
         }))
+
+        // Show toast notification
+        toast({
+          title: "Vote Removed",
+          description: `Your ${voteType} has been removed`,
+          variant: "default",
+        })
       } else {
         // If user voted differently, update the vote
         const oldVoteType = voteData.userVote
@@ -393,9 +402,22 @@ export default function PostDetail() {
 
           return newData
         })
+
+        // Show toast notification
+        toast({
+          title: oldVoteType ? "Vote Changed" : "Vote Added",
+          description: `Your ${oldVoteType ? `vote changed to ${voteType}` : voteType} recorded successfully`,
+          variant: "default",
+        })
       }
     } catch (error) {
       console.error('Error voting:', error)
+      // Show error toast notification
+      toast({
+        title: "Error",
+        description: `Failed to record your vote: ${error.message || 'Unknown error'}`,
+        variant: "destructive",
+      })
     } finally {
       setVoteLoading(false)
     }
@@ -514,19 +536,31 @@ export default function PostDetail() {
               <Button
                 variant="ghost"
                 size="sm"
-                className={`p-1 ${voteData.userVote === 'upvote' ? 'bg-orange-500 text-white' : 'hover:bg-orange-500 hover:text-white'}`}
+                className={`p-1 transition-all duration-200 ${voteData.userVote === 'upvote'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'hover:bg-orange-100 hover:text-orange-600'
+                  } ${voteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => handleVote('upvote')}
                 disabled={voteLoading}
+                title={voteData.userVote === 'upvote' ? 'Remove upvote' : 'Upvote post'}
               >
                 <ChevronUp className="h-4 w-4" />
               </Button>
-              <span className="font-semibold text-gray-700 text-lg">
+              <span className={`font-semibold text-lg ${(voteData.upvotes || 0) - (voteData.downvotes || 0) > 0
+                  ? 'text-orange-600'
+                  : (voteData.upvotes || 0) - (voteData.downvotes || 0) < 0
+                    ? 'text-red-500'
+                    : 'text-gray-700'
+                }`}>
                 {(voteData.upvotes || 0) - (voteData.downvotes || 0)}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                className={`p-1 ${voteData.userVote === 'downvote' ? 'bg-orange-500 text-white' : 'hover:bg-orange-500 hover:text-white'}`}
+                className={`p-1 transition-all duration-200 ${voteData.userVote === 'downvote'
+                  ? 'bg-red-500 text-white shadow-sm'
+                  : 'hover:bg-red-100 hover:text-red-600'
+                  } ${voteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => handleVote('downvote')}
                 disabled={voteLoading}
               >

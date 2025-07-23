@@ -18,10 +18,11 @@ export const voteOnComment = async (commentId, voteType) => {
     return response.data
 }
 
-export const removeVote = async (postId) => {
+export const removeVote = async (targetId, targetType = 'post') => {
     const response = await axiosClient.delete('/votes', {
         data: {
-            target_id: postId
+            target_id: targetId,
+            target_type: targetType
         }
     })
     return response.data
