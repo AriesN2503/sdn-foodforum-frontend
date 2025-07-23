@@ -17,12 +17,105 @@ import {
     ChevronUp,
     ChevronDown,
     ArrowLeft,
+    Clock,
+    MessageCircle,
+    ChefHat,
+    Image as ImageIcon,
+    ExternalLink
 } from "lucide-react"
 import { getCurrentUser, updateUser, getUserFavoritePosts } from "../api/user"
 import postsApi from "../api/posts"
 import { useAuth } from "../hooks/useAuth"
 import { useNavigate } from "react-router"
-import { PostCard } from "../components/PostCard"
+
+// Custom Profile Post Card component
+function ProfilePostCard({ post }) {
+    const navigate = useNavigate()
+
+    const formatDate = (dateString) => {
+        const date = new Date(dateString)
+        return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        })
+    }
+
+    const handleClick = () => {
+        navigate(`/post/${post._id}`)
+    }
+
+    return (
+        <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={handleClick}>
+            <div className="flex p-4">
+                {/* Left side: Thumbnail if available */}
+                {(post.images && post.images.length > 0 || post.imageUrl) && (
+                    <div className="mr-4 flex-shrink-0">
+                        <div className="w-24 h-24 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                            {post.imageUrl ? (
+                                <img
+                                    src={post.imageUrl}
+                                    alt="Post thumbnail"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : Array.isArray(post.images) && post.images.length > 0 && post.images[0].url ? (
+                                <img
+                                    src={post.images[0].url}
+                                    alt="Post thumbnail"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : Array.isArray(post.images) && post.images.length > 0 ? (
+                                <img
+                                    src={`/api/posts/image/${post.images[0]}`}
+                                    alt="Post thumbnail"
+                                    className="w-full h-full object-cover"
+                                />
+                            ) : (
+                                <ImageIcon className="w-8 h-8 text-gray-400" />
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* Right side: Post details */}
+                <div className="flex-1">
+                    <h3 className="font-semibold text-lg mb-1 line-clamp-1">{post.title}</h3>
+                    <p className="text-gray-600 text-sm mb-2 line-clamp-2">{post.content}</p>
+
+                    <div className="flex items-center text-xs text-gray-500 space-x-3 mt-auto">
+                        {post.category && (
+                            <Badge className="bg-orange-100 text-orange-700 hover:bg-orange-200 border-0">
+                                {post.category.name || "Uncategorized"}
+                            </Badge>
+                        )}
+
+                        <div className="flex items-center">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            <span>{formatDate(post.createdAt)}</span>
+                        </div>                        <div className="flex items-center">
+                            <MessageCircle className="w-3 h-3 mr-1" />
+                            <span>{post.commentCount || 0} comments</span>
+                        </div>
+
+                        <div className="flex items-center">
+                            <ThumbsUp className="w-3 h-3 mr-1" />
+                            <span>{post.votes || 0} votes</span>
+                        </div>
+
+                        {post.recipe && (
+                            <Badge variant="outline" className="flex items-center">
+                                <ChefHat className="w-3 h-3 mr-1" />
+                                <span>Recipe</span>
+                            </Badge>
+                        )}
+                    </div>
+                </div>
+
+                <ExternalLink className="w-4 h-4 text-gray-400 self-start ml-2" />
+            </div>
+        </Card>
+    )
+}
 
 export function UserProfile() {
     const [isEditing, setIsEditing] = useState(false)
@@ -315,9 +408,9 @@ export function UserProfile() {
                         </CardHeader>
                         <CardContent>
                             {userPosts.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     {userPosts.map((post) => (
-                                        <PostCard key={post._id} post={post} />
+                                        <ProfilePostCard key={post._id} post={post} />
                                     ))}
                                 </div>
                             ) : (
@@ -346,9 +439,9 @@ export function UserProfile() {
                         </CardHeader>
                         <CardContent>
                             {favoritePosts.length > 0 ? (
-                                <div className="space-y-4">
+                                <div className="space-y-3">
                                     {favoritePosts.map((post) => (
-                                        <PostCard key={post._id} post={post} />
+                                        <ProfilePostCard key={post._id} post={post} />
                                     ))}
                                 </div>
                             ) : (
