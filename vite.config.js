@@ -13,7 +13,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000, // Thay đổi port ở đây
+    port: 3001, // Thay đổi port ở đây
     host: true, // Cho phép truy cập từ network
   },
 })

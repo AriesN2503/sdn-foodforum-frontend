@@ -7,6 +7,7 @@ import { Input } from "../components/ui/input"
 import { Checkbox } from "../components/ui/checkbox"
 import { Button } from "../components/ui/button"
 import { register as registerApi } from '../api/auth'
+import { useToast } from "../context/ToastContext"
 
 export default function Register() {
     const navigate = useNavigate()
@@ -23,6 +24,7 @@ export default function Register() {
     const [showConfirmPassword, setShowConfirmPassword] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
     const [errors, setErrors] = useState({})
+    const { showToast } = useToast()
 
     const handleInputChange = (e) => {
         const { name, value, type, checked } = e.target
@@ -83,6 +85,7 @@ export default function Register() {
                 password: formData.password,
             })
             navigate("/login")
+            showToast("Register successful", { type: "success", duration: 3000 })
         } catch (error) {
             setErrors({ general: error?.response?.data?.error || error.message || "Something went wrong. Try again." })
         } finally {
@@ -112,7 +115,7 @@ export default function Register() {
                             value={formData.username}
                             onChange={handleInputChange}
                             className={`pl-10 ${errors.username ? "border-red-500" : ""}`}
-                            placeholder="your_username"
+                            placeholder="Your Username"
                         />
                     </div>
                     {errors.username && <p className="text-sm text-red-600">{errors.username}</p>}

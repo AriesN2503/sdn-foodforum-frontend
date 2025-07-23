@@ -9,6 +9,8 @@ import commentsApi from "../api/comments"
 import votesApi from "../api/votes"
 import { addToFavorites, removeFromFavorites, getCurrentUser } from "../api/user"
 import { useAuth } from "../hooks/useAuth"
+import { useToast } from "../components/ui/use-toast"
+import { CommentItem } from "../components/CommentItem"
 
 function RecipeCard({ recipe }) {
   if (!recipe) return null;
@@ -85,223 +87,11 @@ function RecipeCard({ recipe }) {
   )
 }
 
-function CommentComponent({ comment, depth = 0 }) {
-  const { user } = useAuth()
-  const navigate = useNavigate()
-  const [isReplying, setIsReplying] = useState(false)
-  const [showReplies, setShowReplies] = useState(true)
-  const [replyText, setReplyText] = useState("")
-  const [voteData, setVoteData] = useState({ upvotes: 0, downvotes: 0, userVote: null })
-  const [voteLoading, setVoteLoading] = useState(false)
-
-  // Load vote data when comment loads
-  useEffect(() => {
-    const loadVoteData = async () => {
-      if (comment._id || comment.id) {
-        try {
-          const votes = await votesApi.getVotes(comment._id || comment.id)
-          setVoteData(votes)
-        } catch (error) {
-          console.warn('Failed to fetch comment votes:', error)
-        }
-      }
-    }
-    loadVoteData()
-  }, [comment._id, comment.id])
-
-  // Handle voting on comments
-  const handleCommentVote = async (voteType) => {
-    if (!user) {
-      navigate('/login')
-      return
-    }
-
-    try {
-      setVoteLoading(true)
-      const commentId = comment._id || comment.id
-
-      // If user already voted with the same type, remove the vote
-      if (voteData.userVote === voteType) {
-        await votesApi.removeVote(commentId)
-        setVoteData(prev => ({
-          ...prev,
-          userVote: null,
-          [voteType === 'upvote' ? 'upvotes' : 'downvotes']: Math.max(0, prev[voteType === 'upvote' ? 'upvotes' : 'downvotes'] - 1)
-        }))
-        console.log(`Removed ${voteType} from comment`)
-      } else {
-        // If user voted differently, update the vote
-        const oldVoteType = voteData.userVote
-        await votesApi.voteOnComment(commentId, voteType)
-
-        setVoteData(prev => {
-          let newData = { ...prev, userVote: voteType }
-
-          // Remove old vote count
-          if (oldVoteType) {
-            newData[oldVoteType === 'upvote' ? 'upvotes' : 'downvotes'] = Math.max(0, newData[oldVoteType === 'upvote' ? 'upvotes' : 'downvotes'] - 1)
-          }
-
-          // Add new vote count
-          newData[voteType === 'upvote' ? 'upvotes' : 'downvotes'] = newData[voteType === 'upvote' ? 'upvotes' : 'downvotes'] + 1
-
-          return newData
-        })
-        console.log(`${voteType.charAt(0).toUpperCase() + voteType.slice(1)}d comment`)
-      }
-    } catch (error) {
-      console.error('Error voting on comment:', error)
-      // You could add a toast notification here for better UX
-    } finally {
-      setVoteLoading(false)
-    }
-  }
-
-  const handleReply = async () => {
-    if (replyText.trim()) {
-      try {
-        // You can implement reply creation here when needed
-        console.log('Reply:', replyText)
-        setReplyText("")
-        setIsReplying(false)
-      } catch (error) {
-        console.error('Failed to post reply:', error)
-      }
-    }
-  }
-
-  // Format timestamp for display
-  const formatCommentTime = (date) => {
-    if (!date) return 'Unknown time'
-    const now = new Date()
-    const commentDate = new Date(date)
-    const diffInMinutes = Math.floor((now - commentDate) / (1000 * 60))
-
-    if (diffInMinutes < 60) {
-      return `${diffInMinutes} minutes ago`
-    } else if (diffInMinutes < 1440) {
-      return `${Math.floor(diffInMinutes / 60)} hours ago`
-    } else {
-      return `${Math.floor(diffInMinutes / 1440)} days ago`
-    }
-  }
-
-  return (
-    <div className={`${depth > 0 ? 'ml-8 border-l border-gray-200 pl-4' : ''}`}>
-      <div className="bg-gray-50 rounded-lg p-4">
-        <div className="flex items-center space-x-2 mb-2">
-          <span className="font-semibold text-gray-800">
-            {comment.user_id?.username || comment.author || 'Unknown User'}
-          </span>
-          <span className="text-sm text-gray-500">
-            {comment.createdAt ? formatCommentTime(comment.createdAt) : comment.timestamp || 'Unknown time'}
-          </span>
-        </div>
-        <div className="flex items-start space-x-3">
-          <div className="flex flex-col items-center space-y-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`p-1 transition-all duration-200 ${voteData.userVote === 'upvote'
-                ? 'bg-orange-500 text-white shadow-sm'
-                : 'hover:bg-orange-100 hover:text-orange-600'
-                } ${voteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => handleCommentVote('upvote')}
-              disabled={voteLoading}
-              title={voteData.userVote === 'upvote' ? 'Remove upvote' : 'Upvote comment'}
-            >
-              <ChevronUp className="h-3 w-3" />
-            </Button>
-            <span className={`text-sm font-semibold ${(voteData.upvotes || 0) - (voteData.downvotes || 0) > 0
-              ? 'text-orange-600'
-              : (voteData.upvotes || 0) - (voteData.downvotes || 0) < 0
-                ? 'text-red-500'
-                : 'text-gray-600'
-              }`}>
-              {(voteData.upvotes || 0) - (voteData.downvotes || 0)}
-            </span>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`p-1 transition-all duration-200 ${voteData.userVote === 'downvote'
-                ? 'bg-red-500 text-white shadow-sm'
-                : 'hover:bg-red-100 hover:text-red-600'
-                } ${voteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-              onClick={() => handleCommentVote('downvote')}
-              disabled={voteLoading}
-              title={voteData.userVote === 'downvote' ? 'Remove downvote' : 'Downvote comment'}
-            >
-              <ChevronDown className="h-3 w-3" />
-            </Button>
-          </div>
-          <div className="flex-1">
-            <p className="text-gray-700 mb-3">{comment.content}</p>
-            <div className="flex items-center space-x-4 text-sm">
-              <button
-                onClick={() => setIsReplying(!isReplying)}
-                className="text-gray-500 hover:text-orange-500 cursor-pointer"
-              >
-                Reply
-              </button>
-              {comment.replies && comment.replies.length > 0 && (
-                <button
-                  onClick={() => setShowReplies(!showReplies)}
-                  className="text-gray-500 hover:text-orange-500 cursor-pointer"
-                >
-                  {showReplies ? 'Hide' : 'Show'} {comment.replies.length} replies
-                </button>
-              )}
-            </div>
-
-            {isReplying && (
-              <div className="mt-3 space-y-2">
-                <textarea
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Write a reply..."
-                  className="w-full p-3 border border-gray-300 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  rows="3"
-                />
-                <div className="flex space-x-2">
-                  <Button
-                    onClick={handleReply}
-                    className="bg-orange-500 hover:bg-orange-600 text-white"
-                    size="sm"
-                  >
-                    Reply
-                  </Button>
-                  <Button
-                    onClick={() => {
-                      setIsReplying(false)
-                      setReplyText("")
-                    }}
-                    variant="outline"
-                    size="sm"
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {showReplies && comment.replies && comment.replies.length > 0 && (
-        <div className="space-y-4 mt-4">
-          {comment.replies.map((reply) => (
-            <CommentComponent key={reply._id || reply.id} comment={reply} depth={depth + 1} />
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
 export default function PostDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
+  const { toast } = useToast()
   const [newComment, setNewComment] = useState("")
   const [comments, setComments] = useState([])
   const [post, setPost] = useState(null)
@@ -311,6 +101,8 @@ export default function PostDetail() {
   const [isFavorited, setIsFavorited] = useState(false)
   const [voteLoading, setVoteLoading] = useState(false)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
+  const [replyingTo, setReplyingTo] = useState(null)
+  const [replyText, setReplyText] = useState("")
 
   useEffect(() => {
     const fetchPost = async () => {
@@ -369,12 +161,19 @@ export default function PostDetail() {
 
       // If user already voted with the same type, remove the vote
       if (voteData.userVote === voteType) {
-        await votesApi.removeVote(id)
+        await votesApi.removeVote(id, 'post')
         setVoteData(prev => ({
           ...prev,
           userVote: null,
           [voteType === 'upvote' ? 'upvotes' : 'downvotes']: Math.max(0, prev[voteType === 'upvote' ? 'upvotes' : 'downvotes'] - 1)
         }))
+
+        // Show toast notification
+        toast({
+          title: "Vote Removed",
+          description: `Your ${voteType} has been removed`,
+          variant: "default",
+        })
       } else {
         // If user voted differently, update the vote
         const oldVoteType = voteData.userVote
@@ -393,9 +192,22 @@ export default function PostDetail() {
 
           return newData
         })
+
+        // Show toast notification
+        toast({
+          title: oldVoteType ? "Vote Changed" : "Vote Added",
+          description: `Your ${oldVoteType ? `vote changed to ${voteType}` : voteType} recorded successfully`,
+          variant: "default",
+        })
       }
     } catch (error) {
       console.error('Error voting:', error)
+      // Show error toast notification
+      toast({
+        title: "Error",
+        description: `Failed to record your vote: ${error.message || 'Unknown error'}`,
+        variant: "destructive",
+      })
     } finally {
       setVoteLoading(false)
     }
@@ -455,6 +267,11 @@ export default function PostDetail() {
   }
 
   const handlePostComment = async () => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+
     if (newComment.trim()) {
       try {
         const comment = await commentsApi.createComment(id, { content: newComment })
@@ -462,20 +279,82 @@ export default function PostDetail() {
         setNewComment("")
         // Update post comment count
         setPost(prev => ({ ...prev, commentCount: (prev.commentCount || 0) + 1 }))
+
+        toast({
+          title: "Comment Posted",
+          description: "Your comment has been posted successfully",
+          variant: "default",
+        })
       } catch (error) {
         console.error('Failed to post comment:', error)
-        // Fallback to local state update if API fails
-        const localComment = {
-          id: Date.now().toString(),
-          user_id: { username: "currentuser" },
-          content: newComment,
-          createdAt: new Date().toISOString(),
-          replies: []
-        }
-        setComments([localComment, ...comments])
-        setNewComment("")
+        toast({
+          title: "Error",
+          description: "Failed to post your comment. Please try again.",
+          variant: "destructive",
+        })
       }
     }
+  }
+
+  // Handle replying to a comment
+  const handleReply = (commentId) => {
+    setReplyingTo(commentId)
+    setReplyText("")
+  }
+
+  // Post a reply to a comment
+  const handlePostReply = async (commentId, text) => {
+    if (!user) {
+      navigate('/login')
+      return
+    }
+
+    if (!text || !text.trim()) {
+      toast({
+        title: "Error",
+        description: "Reply text cannot be empty",
+        variant: "destructive",
+      })
+      return false
+    }
+
+    try {
+      // Create reply (which is a comment with a parent_id)
+      await commentsApi.createComment(id, {
+        content: text,
+        parentId: commentId
+      })
+
+      // Refresh comments to show the new reply
+      const updatedComments = await commentsApi.getCommentsByPostId(id)
+      setComments(updatedComments)
+
+      // Reset state
+      setReplyingTo(null)
+      setReplyText("")
+
+      toast({
+        title: "Reply Posted",
+        description: "Your reply has been posted successfully",
+        variant: "default",
+      })
+
+      return true
+    } catch (error) {
+      console.error('Failed to post reply:', error)
+      toast({
+        title: "Error",
+        description: "Failed to post your reply. Please try again.",
+        variant: "destructive",
+      })
+      return false
+    }
+  }
+
+  // Handle cancel reply
+  const handleCancelReply = () => {
+    setReplyingTo(null)
+    setReplyText("")
   }
 
   // Format timestamp
@@ -514,19 +393,31 @@ export default function PostDetail() {
               <Button
                 variant="ghost"
                 size="sm"
-                className={`p-1 ${voteData.userVote === 'upvote' ? 'bg-orange-500 text-white' : 'hover:bg-orange-500 hover:text-white'}`}
+                className={`p-1 transition-all duration-200 ${voteData.userVote === 'upvote'
+                  ? 'bg-orange-500 text-white shadow-sm'
+                  : 'hover:bg-orange-100 hover:text-orange-600'
+                  } ${voteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => handleVote('upvote')}
                 disabled={voteLoading}
+                title={voteData.userVote === 'upvote' ? 'Remove upvote' : 'Upvote post'}
               >
                 <ChevronUp className="h-4 w-4" />
               </Button>
-              <span className="font-semibold text-gray-700 text-lg">
+              <span className={`font-semibold text-lg ${(voteData.upvotes || 0) - (voteData.downvotes || 0) > 0
+                ? 'text-orange-600'
+                : (voteData.upvotes || 0) - (voteData.downvotes || 0) < 0
+                  ? 'text-red-500'
+                  : 'text-gray-700'
+                }`}>
                 {(voteData.upvotes || 0) - (voteData.downvotes || 0)}
               </span>
               <Button
                 variant="ghost"
                 size="sm"
-                className={`p-1 ${voteData.userVote === 'downvote' ? 'bg-orange-500 text-white' : 'hover:bg-orange-500 hover:text-white'}`}
+                className={`p-1 transition-all duration-200 ${voteData.userVote === 'downvote'
+                  ? 'bg-red-500 text-white shadow-sm'
+                  : 'hover:bg-red-100 hover:text-red-600'
+                  } ${voteLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 onClick={() => handleVote('downvote')}
                 disabled={voteLoading}
               >
@@ -621,9 +512,35 @@ export default function PostDetail() {
             {comments.length === 0 ? (
               <p className="text-gray-500 text-center py-8">No comments yet. Be the first to comment!</p>
             ) : (
-              comments.map((comment) => (
-                <CommentComponent key={comment._id || comment.id} comment={comment} />
-              ))
+              comments.map((comment) => {
+                // Determine the ID field (handling both _id from MongoDB and id from client)
+                const commentId = comment._id || comment.id;
+                return (
+                  <CommentItem
+                    key={commentId}
+                    comment={{
+                      ...comment,
+                      id: commentId, // Ensure id is set
+                      author: comment.user_id?.username || comment.author || 'Unknown User',
+                      timestamp: comment.createdAt ? formatTimestamp(comment.createdAt) : comment.timestamp
+                    }}
+                    replyingTo={replyingTo}
+                    replyText={replyText}
+                    onReply={handleReply}
+                    onPostReply={() => handlePostReply(commentId, replyText)}
+                    onCancelReply={handleCancelReply}
+                    onReplyTextChange={setReplyText}
+                    depth={0}
+                    postId={id}
+                    onCommentAdded={() => {
+                      // Refresh comments after a new reply is added
+                      commentsApi.getCommentsByPostId(id)
+                        .then(commentsData => setComments(commentsData))
+                        .catch(err => console.error('Failed to refresh comments:', err));
+                    }}
+                  />
+                );
+              })
             )}
           </div>
         </CardContent>
