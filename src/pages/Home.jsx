@@ -37,6 +37,9 @@ export default function Home() {
                 postsData = await postsApi.getPostsByFilter(filter.toLowerCase())
             }
 
+            // Filter only approved posts for the home page
+            postsData = postsData.filter(post => post.status === 'approved')
+
             // Transform posts to match frontend format
             const transformedPosts = postsData.map(post => ({
                 id: post._id,

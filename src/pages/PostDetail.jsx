@@ -257,9 +257,14 @@ export default function PostDetail() {
           <CardContent className="p-8 text-center">
             <h2 className="text-2xl font-bold text-gray-800 mb-4">Post Not Found</h2>
             <p className="text-gray-600 mb-6">{error || "The post you're looking for doesn't exist."}</p>
-            <Button onClick={() => navigate('/')} className="bg-orange-500 hover:bg-orange-600 text-white !cursor-pointer">
-              Go Back Home
-            </Button>
+            <div className="flex space-x-4">
+              <Button onClick={() => navigate(-1)} className="bg-orange-500 hover:bg-orange-600 text-white !cursor-pointer">
+                Go Back
+              </Button>
+              <Button onClick={() => navigate('/')} variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-50 !cursor-pointer">
+                Go to Home
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -377,12 +382,12 @@ export default function PostDetail() {
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       {/* Back Button */}
       <Button
-        onClick={() => navigate('/')}
+        onClick={() => navigate(-1)}
         variant="ghost"
         className="mb-4 hover:bg-orange-50 hover:text-orange-600 cursor-pointer"
       >
         <ArrowLeft className="h-4 w-4 mr-2" />
-        Back to Feed
+        Back
       </Button>
 
       {/* Post Content */}

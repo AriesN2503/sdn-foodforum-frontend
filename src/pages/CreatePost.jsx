@@ -131,6 +131,7 @@ export default function CreatePost() {
             postData.append('title', formData.title.trim())
             postData.append('content', formData.content.trim())
             postData.append('category', formData.category)
+            postData.append('status', 'pending') // Set default status to 'pending'
 
             // Add recipe fields if provided
             if (formData.prepTime.trim()) {
@@ -160,11 +161,11 @@ export default function CreatePost() {
 
             toast({
                 title: "Success",
-                description: "Post created successfully!",
+                description: "Your post has been created and is pending approval by a moderator.",
                 variant: "default"
             })
 
-            navigate("/")
+            navigate("/my-posts")
         } catch (error) {
             console.error('Error creating post:', error)
             toast({

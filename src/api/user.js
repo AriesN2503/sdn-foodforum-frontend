@@ -51,3 +51,19 @@ export async function uploadAvatarToFirebase(file, userId) {
     await uploadBytes(avatarRef, file);
     return await getDownloadURL(avatarRef);
 }
+
+// Moderator functions
+export const getAllUsers = async () => {
+    const response = await axiosClient.get('/users/all');
+    return response.data;
+}
+
+export const updateUserStatus = async (userId, status) => {
+    const response = await axiosClient.put(`/users/${userId}/status`, { status });
+    return response.data;
+}
+
+export const updateUserRole = async (userId, role) => {
+    const response = await axiosClient.put(`/users/${userId}/role`, { role });
+    return response.data;
+}
