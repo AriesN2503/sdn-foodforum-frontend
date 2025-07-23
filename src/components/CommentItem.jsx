@@ -40,14 +40,64 @@ export function CommentItem({
   const [editText, setEditText] = useState(comment.content || "")
   const [isDeleting, setIsDeleting] = useState(false)
 
-  // Check if current user is the comment owner
-  const isCommentOwner = user && (
-    (comment.user_id && user.id === comment.user_id._id) ||
-    (comment.user_id && user.id === comment.user_id.id) ||
-    user.username === comment.author
+  // Get user data from localStorage if not available from context
+  useEffect(() => {
+    if (!user) {
+      try {
+        const stored = localStorage.getItem("foodforum_auth")
+        if (stored) {
+          const userData = JSON.parse(stored).user
+          if (userData) {
+            console.log('Retrieved user from localStorage:', userData)
+          }
+        }
+      } catch (error) {
+        console.error('Error retrieving user from localStorage:', error)
+      }
+    }
+  }, [user])
+
+  // Get stored user from localStorage
+  const storedUserData = (() => {
+    try {
+      const stored = localStorage.getItem("foodforum_auth")
+      return stored ? JSON.parse(stored).user : null
+    } catch (e) {
+      console.error('Error parsing stored user data', e)
+      return null
+    }
+  })()
+
+  // Check if current user is the comment owner - using various potential ID formats
+  const isCommentOwner = comment && (
+    // Check using user from auth context
+    (user && (
+      // By MongoDB ID
+      (comment.user_id && comment.user_id._id && user.id === comment.user_id._id) ||
+      // By regular ID field
+      (comment.user_id && comment.user_id.id && user.id === comment.user_id.id) ||
+      // By direct string comparison
+      (comment.user_id && typeof comment.user_id === 'string' && user.id === comment.user_id) ||
+      // By userId field
+      (comment.userId && user.id === comment.userId) ||
+      // By username (direct match)
+      (user.username && comment.author && user.username === comment.author) ||
+      // By username from user_id object
+      (comment.user_id && comment.user_id.username && user.username === comment.user_id.username)
+    )) ||
+    // Fallback: Check using stored user data from localStorage
+    (storedUserData && (
+      (comment.user_id && comment.user_id._id && storedUserData.id === comment.user_id._id) ||
+      (comment.user_id && comment.user_id.id && storedUserData.id === comment.user_id.id) ||
+      (comment.user_id && typeof comment.user_id === 'string' && storedUserData.id === comment.user_id) ||
+      (comment.userId && storedUserData.id === comment.userId) ||
+      (storedUserData.username && comment.author && storedUserData.username === comment.author) ||
+      (comment.user_id && comment.user_id.username && storedUserData.username === comment.user_id.username)
+    ))
   )
 
-  // Format timestamp for display
+  // Compact debug console log
+  console.log(`Comment: ${comment.id?.substring(0, 8)}, Author: ${comment.author || comment.user_id?.username}, isOwner: ${isCommentOwner}`)  // Format timestamp for display
   const formatTimestamp = (date) => {
     if (!date) return 'Unknown time'
     const now = new Date()
