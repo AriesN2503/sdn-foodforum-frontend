@@ -1,14 +1,47 @@
 import { Badge } from "./ui/badge"
 import { Button } from "./ui/button"
 import { Card, CardContent } from "./ui/card"
+import { useState, useEffect } from "react"
+import postsApi from "../api/posts"
+import { useNavigate } from "react-router"
 
 export function TrendingSidebar() {
+  const navigate = useNavigate()
+  const [topRecipe, setTopRecipe] = useState(null)
+  const [loading, setLoading] = useState(true)
+
   const trendingTopics = ["#SourdoughStarter", "#AirFryerRecipes", "#PlantBased", "#MealPrep"]
 
   const popularCommunities = [
     { name: "r/recipes", members: "2.1M members" },
     { name: "r/food", members: "1.8M members" },
   ]
+
+  useEffect(() => {
+    const fetchTopRecipe = async () => {
+      try {
+        setLoading(true)
+        // Fetch posts with "hot" filter to get the most voted posts
+        const hotPosts = await postsApi.getPostsByFilter('hot')
+
+        // Get the first post (most voted) that has images
+        const topPost = hotPosts.find(post => post.images && post.images.length > 0)
+        setTopRecipe(topPost)
+      } catch (error) {
+        console.error('Error fetching top recipe:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchTopRecipe()
+  }, [])
+
+  const handleViewRecipe = () => {
+    if (topRecipe && topRecipe._id) {
+      navigate(`/post/${topRecipe._id}`)
+    }
+  }
 
   return (
     <aside className="w-full space-y-6">
@@ -50,22 +83,57 @@ export function TrendingSidebar() {
 
       <Card>
         <CardContent className="p-4">
-          <h3 className="font-semibold text-orange-500 mb-4">Recipe of the Day</h3>
-          <div className="space-y-3">
-            <img
-              src="https://i.pinimg.com/736x/78/2e/b5/782eb52c3d668c2778b346288fb20f8a.jpg"
-              alt="Recipe of the day"
-              width={200}
-              height={120}
-              className="rounded-lg object-cover w-full h-[200px]"
-            />
+          <h3 className="font-semibold text-orange-500 mb-4">Recipe of the Week</h3>
+          {loading ? (
+            <div className="space-y-3 animate-pulse">
+              <div className="bg-gray-200 rounded-lg w-full h-[200px]"></div>
+              <div className="bg-gray-200 h-5 w-3/4 rounded"></div>
+              <div className="bg-gray-200 h-4 w-full rounded"></div>
+              <div className="bg-gray-200 h-8 w-full rounded"></div>
+            </div>
+          ) : topRecipe ? (
+            <div className="space-y-3 cursor-pointer" onClick={handleViewRecipe}>
+              <img
+                src={topRecipe.images && topRecipe.images.length > 0
+                  ? topRecipe.images[0].url
+                  : topRecipe.imageUrl || "/images/food_placeholder.jpg"}
+                alt={topRecipe.title || "Recipe of the week"}
+                width={200}
+                height={120}
+                className="rounded-lg object-cover w-full h-[200px]"
+                onError={(e) => {
+                  e.target.onerror = null;
+                  e.target.src = "/images/food_placeholder.jpg";
+                }}
+              />
 
-            <h4 className="font-medium text-gray-800">Creamy Mushroom Risotto</h4>
-            <p className="text-sm text-gray-600">A rich and creamy Italian classic perfect for dinner.</p>
-            <Button size="sm" className="w-full bg-orange-500 hover:bg-orange-600">
-              View Recipe
-            </Button>
-          </div>
+              <h4 className="font-medium text-gray-800">{topRecipe.title}</h4>
+              <p className="text-sm text-gray-600 line-clamp-2">{topRecipe.content}</p>
+              <Button
+                size="sm"
+                className="w-full bg-orange-500 hover:bg-orange-600 cursor-pointer"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleViewRecipe()
+                }}
+              >
+                View Recipe
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <img
+                src="/images/food_placeholder.jpg"
+                alt="Recipe of the week"
+                width={200}
+                height={120}
+                className="rounded-lg object-cover w-full h-[200px]"
+              />
+
+              <h4 className="font-medium text-gray-800">No recipes found</h4>
+              <p className="text-sm text-gray-600">Check back later for the top recipe of the week.</p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </aside>

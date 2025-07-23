@@ -50,33 +50,47 @@ function ProfilePostCard({ post }) {
         <Card className="overflow-hidden hover:shadow-md transition-shadow cursor-pointer" onClick={handleClick}>
             <div className="flex p-4">
                 {/* Left side: Thumbnail if available */}
-                {(post.images && post.images.length > 0 || post.imageUrl) && (
-                    <div className="mr-4 flex-shrink-0">
-                        <div className="w-24 h-24 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
-                            {post.imageUrl ? (
-                                <img
-                                    src={post.imageUrl}
-                                    alt="Post thumbnail"
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : Array.isArray(post.images) && post.images.length > 0 && post.images[0].url ? (
-                                <img
-                                    src={post.images[0].url}
-                                    alt="Post thumbnail"
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : Array.isArray(post.images) && post.images.length > 0 ? (
-                                <img
-                                    src={`/api/posts/image/${post.images[0]}`}
-                                    alt="Post thumbnail"
-                                    className="w-full h-full object-cover"
-                                />
-                            ) : (
-                                <ImageIcon className="w-8 h-8 text-gray-400" />
-                            )}
-                        </div>
+                <div className="mr-4 flex-shrink-0">
+                    <div className="w-24 h-24 rounded-md bg-gray-100 flex items-center justify-center overflow-hidden">
+                        {post.imageUrl ? (
+                            <img
+                                src={post.imageUrl}
+                                alt="Post thumbnail"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "/images/food_placeholder.jpg";
+                                }}
+                            />
+                        ) : Array.isArray(post.images) && post.images.length > 0 && post.images[0].url ? (
+                            <img
+                                src={post.images[0].url}
+                                alt="Post thumbnail"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "/images/food_placeholder.jpg";
+                                }}
+                            />
+                        ) : Array.isArray(post.images) && post.images.length > 0 ? (
+                            <img
+                                src={`/api/posts/image/${post.images[0]}`}
+                                alt="Post thumbnail"
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                    e.target.onerror = null;
+                                    e.target.src = "/images/food_placeholder.jpg";
+                                }}
+                            />
+                        ) : (
+                            <img
+                                src="/images/food_placeholder.jpg"
+                                alt="Post thumbnail"
+                                className="w-full h-full object-cover"
+                            />
+                        )}
                     </div>
-                )}
+                </div>
 
                 {/* Right side: Post details */}
                 <div className="flex-1">
