@@ -141,7 +141,8 @@ export function UserProfile() {
     const [userPosts, setUserPosts] = useState([])
     const [favoritePosts, setFavoritePosts] = useState([])
     const [activeTab, setActiveTab] = useState("profile")
-    const { user: currentUser, setUser, logout } = useAuth()
+    const authContext = useAuth()
+    const { user: currentUser, logout } = authContext
     const navigate = useNavigate()
     const { id } = useParams()
     const [isOwnProfile, setIsOwnProfile] = useState(false)
@@ -149,7 +150,6 @@ export function UserProfile() {
     const [profileData, setProfileData] = useState({
         username: "",
         email: "",
-        bio: "",
         phone_number: "",
         avatar: ""
     })
@@ -175,7 +175,7 @@ export function UserProfile() {
             let user;
 
             // If id is not provided or it's the current user's id, show the current user's profile
-            if (!id || id === currentUser?._id) {
+            if (!id || (currentUser && (id === currentUser._id))) {
                 const userResponse = await getCurrentUser()
                 user = userResponse.user
                 setIsOwnProfile(true)
@@ -184,7 +184,7 @@ export function UserProfile() {
                 const userResponse = await getUserById(id)
                 // Check if userResponse is the user object directly or nested in a user property
                 user = userResponse.user || userResponse
-                setIsOwnProfile(user?._id === currentUser?._id)
+                setIsOwnProfile(currentUser && user?._id === currentUser._id)
             }
 
             // Validate that we have a user object before proceeding
@@ -192,11 +192,15 @@ export function UserProfile() {
                 throw new Error('User data not found')
             }
 
+            // Ensure user has _id property for API calls
+            if (!user._id && user.id) {
+                user._id = user.id;
+            }
+
             setUserData(user)
             setProfileData({
                 username: user.username || "",
                 email: user.email || "",
-                bio: user.bio || "",
                 phone_number: user.phone_number || "",
                 avatar: user.avatar || ""
             })
@@ -258,17 +262,37 @@ export function UserProfile() {
         try {
             setSaving(true)
 
+            // Make sure we have a valid user ID
+            const userId = userData?._id || (currentUser && currentUser._id);
+
+            if (!userId) {
+                throw new Error('User ID not found. Cannot update profile.');
+            }
+
             const updateData = {
                 username: profileData.username,
-                bio: profileData.bio,
                 phone_number: profileData.phone_number
             }
 
-            await updateUser(userData._id, updateData)
+            await updateUser(userId, updateData)
 
             // Update local state
             setUserData(prev => ({ ...prev, ...updateData }))
-            setUser(prev => ({ ...prev, ...updateData }))
+
+            // Update auth context user data if setUser function exists
+            if (authContext && typeof authContext.setUser === 'function') {
+                authContext.setUser(prev => ({ ...prev, ...updateData }))
+
+                // Also update localStorage to persist changes
+                const stored = localStorage.getItem("foodforum_auth")
+                if (stored) {
+                    const authData = JSON.parse(stored)
+                    localStorage.setItem("foodforum_auth", JSON.stringify({
+                        ...authData,
+                        user: { ...authData.user, ...updateData }
+                    }))
+                }
+            }
 
             setIsEditing(false)
             setError(null)
@@ -380,21 +404,6 @@ export function UserProfile() {
                                         )}
                                         {saving ? 'Saving...' : isEditing ? 'Save' : 'Edit Profile'}
                                     </Button>
-                                )}
-                            </div>                            {/* Bio */}
-                            <div>
-                                {isEditing && isOwnProfile ? (
-                                    <Textarea
-                                        value={profileData.bio}
-                                        onChange={(e) => handleInputChange('bio', e.target.value)}
-                                        placeholder="Tell us about yourself..."
-                                        className="mt-2"
-                                        rows={3}
-                                    />
-                                ) : (
-                                    <p className="text-gray-700">
-                                        {userData?.bio || "No bio available"}
-                                    </p>
                                 )}
                             </div>
 

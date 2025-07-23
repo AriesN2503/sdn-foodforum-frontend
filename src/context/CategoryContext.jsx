@@ -1,9 +1,10 @@
-import { createContext, useState } from 'react'
+import { useState } from 'react'
+import CategoryContext from './CategoryContextInstance'
 
-export const CategoryContext = createContext()
+export { CategoryContext }
 
 export const CategoryProvider = ({ children }) => {
-    const [selectedCategory, setSelectedCategory] = useState('Hot')
+    const [selectedCategory, setSelectedCategory] = useState('New')
 
     const selectCategory = (categoryName) => {
         setSelectedCategory(categoryName)

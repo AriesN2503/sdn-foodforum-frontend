@@ -86,7 +86,14 @@ export function CategoriesSidebar({ onCategorySelect, selectedCategory }) {
                                 return (
                                     <button
                                         key={category._id}
-                                        onClick={() => onCategorySelect(category.name)}
+                                        onClick={() => {
+                                            // If the category is already selected, deselect it and go to New posts
+                                            if (isSelected) {
+                                                onCategorySelect("New")
+                                            } else {
+                                                onCategorySelect(category.name)
+                                            }
+                                        }}
                                         className={`flex items-center space-x-3 w-full text-left py-2 px-2 rounded transition-colors ${isSelected
                                             ? 'bg-orange-100 text-orange-600'
                                             : 'text-gray-700 hover:text-orange-500 hover:bg-orange-50'

@@ -13,6 +13,9 @@ export const getUserById = async (id) => {
 }
 
 export const updateUser = async (id, userData) => {
+    if (!id) {
+        throw new Error('User ID is required for update');
+    }
     const response = await axiosClient.put(`/users/${id}`, userData)
     return response.data
 }
