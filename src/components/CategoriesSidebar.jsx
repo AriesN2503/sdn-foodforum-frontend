@@ -1,14 +1,21 @@
-import { Home, TrendingUp, ChefHat, MapPin, Coffee, Cake, Heart, Globe, Users } from "lucide-react"
+import { Home, TrendingUp, ChefHat, MapPin, Coffee, Cake, Heart, Globe, User } from "lucide-react"
 import { Card, CardContent } from "./ui/card"
 import { useState, useEffect } from "react"
 import categoriesApi from "../api/categories"
+import { getUsers } from "../api/user"
+import { useNavigate } from "react-router"
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 
 export function CategoriesSidebar({ onCategorySelect, selectedCategory }) {
     const [categories, setCategories] = useState([])
     const [loading, setLoading] = useState(true)
+    const [users, setUsers] = useState([])
+    const [loadingUsers, setLoadingUsers] = useState(true)
+    const navigate = useNavigate()
 
     useEffect(() => {
         loadCategories()
+        loadUsers()
     }, [])
 
     const loadCategories = async () => {
@@ -20,6 +27,26 @@ export function CategoriesSidebar({ onCategorySelect, selectedCategory }) {
         } finally {
             setLoading(false)
         }
+    }
+
+    const loadUsers = async () => {
+        try {
+            setLoadingUsers(true)
+            const usersData = await getUsers()
+            // Filter users with role 'user' and limit to 8
+            const filteredUsers = usersData
+                .filter(user => user.role === 'user')
+                .slice(0, 5)
+            setUsers(filteredUsers)
+        } catch (error) {
+            console.error('Error loading users:', error)
+        } finally {
+            setLoadingUsers(false)
+        }
+    }
+
+    const handleUserClick = (userId) => {
+        navigate(`/profile/${userId}`)
     }
 
     // Icon mapping for categories
@@ -44,8 +71,6 @@ export function CategoriesSidebar({ onCategorySelect, selectedCategory }) {
         return iconMap[categoryName] || ChefHat
     }
 
-    const communities = [{ label: "Italian Cuisine" }, { label: "Vegan Recipes" }]
-
     return (
         <aside className="w-full space-y-6">
             <Card>
@@ -63,8 +88,8 @@ export function CategoriesSidebar({ onCategorySelect, selectedCategory }) {
                                         key={category._id}
                                         onClick={() => onCategorySelect(category.name)}
                                         className={`flex items-center space-x-3 w-full text-left py-2 px-2 rounded transition-colors ${isSelected
-                                                ? 'bg-orange-100 text-orange-600'
-                                                : 'text-gray-700 hover:text-orange-500 hover:bg-orange-50'
+                                            ? 'bg-orange-100 text-orange-600'
+                                            : 'text-gray-700 hover:text-orange-500 hover:bg-orange-50'
                                             }`}
                                     >
                                         <span className="text-lg">{category.icon}</span>
@@ -79,18 +104,31 @@ export function CategoriesSidebar({ onCategorySelect, selectedCategory }) {
 
             <Card>
                 <CardContent className="p-4">
-                    <h3 className="font-semibold text-orange-500 mb-4">My Communities</h3>
+                    <h3 className="font-semibold text-orange-500 mb-4">People You May Know</h3>
                     <div className="space-y-3">
-                        {communities.map((community) => (
-                            <a
-                                key={community.label}
-                                href="#"
-                                className="flex items-center space-x-3 text-gray-700 hover:text-orange-500"
-                            >
-                                <Users className="h-4 w-4" />
-                                <span>{community.label}</span>
-                            </a>
-                        ))}
+                        {loadingUsers ? (
+                            <div className="text-gray-500">Loading users...</div>
+                        ) : users.length === 0 ? (
+                            <div className="text-gray-500">No users found</div>
+                        ) : (
+                            users.map((user) => (
+                                <div
+                                    key={user._id}
+                                    onClick={() => handleUserClick(user._id)}
+                                    className="flex items-center space-x-3 p-2 rounded-md hover:bg-orange-50 transition-colors cursor-pointer"
+                                >
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarImage src={user.avatar} alt={user.username} />
+                                        <AvatarFallback>
+                                            {user.username ? user.username.substring(0, 2).toUpperCase() : <User className="h-6 w-6" />}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <div className="font-medium">{user.username}</div>
+                                    </div>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </CardContent>
             </Card>
