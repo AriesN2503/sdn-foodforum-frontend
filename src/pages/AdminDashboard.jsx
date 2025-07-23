@@ -13,15 +13,6 @@ import {
     TrendingUp,
     Users
 } from "lucide-react"
-import { useEffect, useState } from "react"
-import { useNavigate } from "react-router"
-import { register } from "../api/auth"
-import postsApi from "../api/posts"
-import { deleteUser, getUsers, updateUser } from "../api/user"
-import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
-import { Badge } from "../components/ui/badge"
-import { Button } from "../components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
 import { Input } from "../components/ui/input"
 import { useToast } from "../context/ToastContext"
@@ -32,17 +23,7 @@ export default function AdminDashboard() {
     const [users, setUsers] = useState([])
     const [posts, setPosts] = useState([])
     const [editingUser, setEditingUser] = useState(null)
-    const [deletingUser, setDeletingUser] = useState(null)
-    const [addingUser, setAddingUser] = useState(false)
-    const [newUser, setNewUser] = useState({
-        username: '',
-        email: '',
-        password: '',
-        role: 'user'
-    })
-    const [isLoading, setIsLoading] = useState(true)
-    const [dashboardStats, setDashboardStats] = useState([])
-    const [searchTerm, setSearchTerm] = useState("")
+    const [deletingUser, setDeletingUser] = useState(null);
     const { showToast } = useToast()
     const { user, logout } = useAuth()
     const navigate = useNavigate()
@@ -58,7 +39,9 @@ export default function AdminDashboard() {
     const tabs = [
         { id: "dashboard", label: "Dashboard", icon: TrendingUp },
         { id: "users", label: "Users", icon: Users },
-        // { id: "posts", label: "Posts", icon: MessageSquare },
+        // { id: "recipes", label: "Recipes", icon: BookOpen },
+        { id: "posts", label: "Posts", icon: MessageSquare },
+        // { id: "settings", label: "Settings", icon: Settings },
     ]
 
     // Fetch users and posts data
@@ -156,59 +139,6 @@ export default function AdminDashboard() {
         user.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    // Add a delete post handler
-    const handleDeletePost = async (postId) => {
-        if (window.confirm("Are you sure you want to delete this post?")) {
-            try {
-                await postsApi.deletePost(postId);
-                setPosts(posts.filter(post => post._id !== postId));
-                showToast("Post deleted successfully", { type: "success" });
-            } catch (error) {
-                console.error("Failed to delete post:", error);
-                showToast("Failed to delete post", { type: "error" });
-            }
-        }
-    };
-
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
-    // Add a handler for adding a new user
-    const handleAddUser = async () => {
-        try {
-            // Validate inputs
-            if (!newUser.username || !newUser.email || !newUser.password) {
-                showToast("Please fill in all required fields", { type: "error" });
-                return;
-            }
-
-            // Register the new user
-            const response = await register(newUser);
-
-            // Add the new user to the users list
-            setUsers(prev => [...prev, response.user]);
-
-            // Reset the form and close the modal
-            setNewUser({
-                username: '',
-                email: '',
-                password: '',
-                role: 'user'
-            });
-            setAddingUser(false);
-
-            showToast("User added successfully!", { type: "success" });
-        } catch (err) {
-            console.error("Failed to add user:", err);
-            if (err?.response?.data?.error?.includes("duplicate key error")) {
-                showToast("Email already exists. Please use a different one.", { type: "error" });
-            } else {
-                showToast("Failed to add user: " + (err.response?.data?.error || err.message), { type: "error" });
-            }
-        }
-    };
 
     const renderDashboard = () => (
         <div className="space-y-6">
@@ -424,58 +354,7 @@ export default function AdminDashboard() {
                             >
                                 Confirm Delete
                             </Button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
-            {/* Add User Modal */}
-            {addingUser && (
-                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-lg w-full max-w-md space-y-4">
-                        <h2 className="text-xl font-semibold">Add New User</h2>
-                        <div>
-                            <label className="block text-sm mb-1">Username</label>
-                            <Input
-                                value={newUser.username}
-                                onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
-                                placeholder="Enter username"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm mb-1">Email</label>
-                            <Input
-                                type="email"
-                                value={newUser.email}
-                                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
-                                placeholder="Enter email address"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm mb-1">Password</label>
-                            <Input
-                                type="password"
-                                value={newUser.password}
-                                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
-                                placeholder="Enter password"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm mb-1">Role</label>
-                            <select
-                                value={newUser.role}
-                                onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
-                                className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
-                            >
-                                <option value="user">User</option>
-                                <option value="moderator">Moderator</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-
-                        <div className="flex justify-end space-x-2">
-                            <Button variant="outline" onClick={() => setAddingUser(false)}>Cancel</Button>
-                            <Button className="bg-orange-500 hover:bg-orange-600" onClick={handleAddUser}>Add User</Button>
                         </div>
                     </div>
                 </div>
