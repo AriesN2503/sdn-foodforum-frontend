@@ -105,7 +105,17 @@ export const mockRegister = async (username, email, password) => {
 
 // Check if user has required role
 export const checkRole = (userRole, requiredRole) => {
+  // Handle case when userRole might be undefined
+  if (!userRole) return false
+
   const roleHierarchy = { user: 1, moderator: 2, admin: 3 }
+
+  // Make sure both roles exist in the hierarchy
+  if (!roleHierarchy[userRole] || !roleHierarchy[requiredRole]) {
+    console.error(`Invalid role: ${userRole} or ${requiredRole}`)
+    return false
+  }
+
   return roleHierarchy[userRole] >= roleHierarchy[requiredRole]
 }
 
