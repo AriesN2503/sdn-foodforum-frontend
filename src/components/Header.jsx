@@ -1,14 +1,16 @@
-import { Search, ChefHat, Coffee, MessageCircle, User as UserIcon, Plus } from "lucide-react"
+import { Search, ChefHat, Coffee, MessageCircle, User as UserIcon, Plus, Shield } from "lucide-react"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Link } from "react-router"
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar"
 import { useAuth } from "../hooks/useAuth"
+import { checkRole } from "../utils/auth"
 
 
 
 export default function Header() {
   const { isAuthenticated, user } = useAuth();
+  const isModerator = user && checkRole(user.role, 'moderator');
 
   return (
     <header className="bg-white border-b border-gray-200">
@@ -35,6 +37,14 @@ export default function Header() {
           </Link>
           {isAuthenticated && user ? (
             <>
+              {isModerator && (
+                <Link to="/moderator" className="p-2 rounded-full hover:bg-blue-100 transition-colors" title="Moderator Dashboard">
+                  <Shield className="h-6 w-6 text-blue-500" />
+                </Link>
+              )}
+              <Link to="/my-posts" className="p-2 rounded-full hover:bg-orange-100 transition-colors" title="My Posts">
+                <MessageCircle className="h-6 w-6 text-orange-500" />
+              </Link>
               <Link to="/create-post">
                 <Button className="bg-orange-500 hover:bg-orange-600 text-white">
                   <Plus className="h-4 w-4 mr-2" />

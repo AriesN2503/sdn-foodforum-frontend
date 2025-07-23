@@ -48,7 +48,6 @@ export function CommentItem({
         if (stored) {
           const userData = JSON.parse(stored).user
           if (userData) {
-            console.log('Retrieved user from localStorage:', userData)
           }
         }
       } catch (error) {
@@ -97,7 +96,6 @@ export function CommentItem({
   )
 
   // Compact debug console log
-  console.log(`Comment: ${comment.id?.substring(0, 8)}, Author: ${comment.author || comment.user_id?.username}, isOwner: ${isCommentOwner}`)  // Format timestamp for display
   const formatTimestamp = (date) => {
     if (!date) return 'Unknown time'
     const now = new Date()

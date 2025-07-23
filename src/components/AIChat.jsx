@@ -128,7 +128,6 @@ export function AIChat({ posts = [], isOpen, onClose }) {
     const handleSend = async (directContent) => {
         // Đảm bảo messageToSend luôn là chuỗi
         if (Object.is(input, null) || Object.is(directContent, null)) {
-            console.log(JSON.stringify({ input, directContent }, null, 2));
         }
         const messageToSend = String(input || directContent);
 

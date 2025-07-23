@@ -5,7 +5,6 @@ import ChatMessagesSkeleton from './ChatMessagesSkeleton';
 const ChatMessages = ({ messages, currentUser, isLoading, onReply }) => {
     const messagesEndRef = useRef(null);
 
-    console.log('messages in ChatMessages: ', messages)
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -15,18 +14,18 @@ const ChatMessages = ({ messages, currentUser, isLoading, onReply }) => {
         const date = new Date(timestamp);
         const now = new Date();
         const diffInHours = (now - date) / (1000 * 60 * 60);
-        
+
         if (diffInHours < 24) {
-            return date.toLocaleTimeString('vi-VN', { 
-                hour: '2-digit', 
-                minute: '2-digit' 
+            return date.toLocaleTimeString('vi-VN', {
+                hour: '2-digit',
+                minute: '2-digit'
             });
         } else if (diffInHours < 48) {
             return 'Hôm qua';
         } else {
-            return date.toLocaleDateString('vi-VN', { 
-                day: '2-digit', 
-                month: '2-digit' 
+            return date.toLocaleDateString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit'
             });
         }
     };
@@ -80,22 +79,22 @@ const ChatMessages = ({ messages, currentUser, isLoading, onReply }) => {
                     <div className="flex items-center justify-center">
                         <div className="bg-muted px-3 py-1 rounded-full">
                             <span className="text-xs text-muted-foreground">
-                                {new Date(date).toLocaleDateString('vi-VN', { 
-                                    weekday: 'long', 
-                                    year: 'numeric', 
-                                    month: 'long', 
-                                    day: 'numeric' 
+                                {new Date(date).toLocaleDateString('vi-VN', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric'
                                 })}
                             </span>
                         </div>
                     </div>
                     {groupMessages.map((message, index) => {
                         const isOwn = isOwnMessage(message);
-                        const showAvatar = !isOwn && (index === 0 || 
+                        const showAvatar = !isOwn && (index === 0 ||
                             !isOwnMessage(groupMessages[index - 1]));
-                        const showTime = index === groupMessages.length - 1 || 
+                        const showTime = index === groupMessages.length - 1 ||
                             groupMessages[index + 1]?.senderId !== message.senderId;
-                        
+
                         return (
                             <ChatMessage
                                 key={message._id || message.id || index}

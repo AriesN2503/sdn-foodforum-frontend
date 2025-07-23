@@ -33,17 +33,6 @@ const MOCK_USERS = [
   },
 ]
 
-// Get stored auth data
-export const getStoredAuth = () => {
-  try {
-    const stored = localStorage.getItem(AUTH_STORAGE_KEY)
-    return stored ? JSON.parse(stored) : null
-  } catch (error) {
-    console.error("Error parsing stored auth:", error)
-    return null
-  }
-}
-
 // Store auth data
 export const storeAuth = (authData) => {
   try {
@@ -117,6 +106,17 @@ export const checkRole = (userRole, requiredRole) => {
   }
 
   return roleHierarchy[userRole] >= roleHierarchy[requiredRole]
+}
+
+// Get stored auth data from localStorage
+export const getStoredAuth = () => {
+  try {
+    const authData = localStorage.getItem(AUTH_STORAGE_KEY)
+    return authData ? JSON.parse(authData) : null
+  } catch (error) {
+    console.error('Error parsing auth data from localStorage:', error)
+    return null
+  }
 }
 
 // Check if user is authenticated

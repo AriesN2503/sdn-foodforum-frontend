@@ -62,7 +62,6 @@ export default function Login() {
         setIsLoading(true)
         setErrors({})
         try {
-            await login(formData.email, formData.password)
             const data = await loginApi(formData.email, formData.password)
             // Decode JWT để lấy thông tin user
             let user = data.user || {};
@@ -70,6 +69,7 @@ export default function Login() {
                 try {
                     const decoded = jwtDecode(data.accessToken);
                     user = { ...user, ...decoded };
+                    await login(data.accessToken, user)
                 } catch (err) {
                     console.error('JWT decode error:', err);
                 }

@@ -61,7 +61,6 @@ const ChatPage = () => {
 
     const socket = useChatSocket({
         onNewMessage: (msg) => {
-            console.log('🔔 Socket onNewMessage received:', msg);
             const currentChatId = (selectedChatRef.current?.id || selectedChatRef.current?._id || '').toString();
             const messageConversationId = (msg.conversation || msg.conversationId || '').toString();
 

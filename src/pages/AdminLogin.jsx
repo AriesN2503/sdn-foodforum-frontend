@@ -47,7 +47,6 @@ export default function AdminLogin() {
         try {
             // Use adminLogin specifically for admin authentication
             const res = await adminLogin(formData.email, formData.password)
-            console.log(res)
 
             // Store the user and token in auth context
             if (res.accessToken && res.user) {

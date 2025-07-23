@@ -38,6 +38,7 @@ import postsApi from "../api/posts"
 export default function ModeratorDashboard() {
   const [activeTab, setActiveTab] = useState("dashboard")
   const [posts, setPosts] = useState([])
+  const [pendingPosts, setPendingPosts] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
   const [isLoading, setIsLoading] = useState(true)
@@ -56,7 +57,8 @@ export default function ModeratorDashboard() {
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: TrendingUp },
-    { id: "posts", label: "Posts", icon: MessageSquare },
+    { id: "pending", label: "Pending Approval", icon: AlertTriangle },
+    { id: "posts", label: "All Posts", icon: MessageSquare },
     { id: "comments", label: "Comments", icon: MessageCircle },
   ]
 
@@ -65,39 +67,64 @@ export default function ModeratorDashboard() {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const postsResponse = await postsApi.getAllPosts();
-        setPosts(postsResponse);
+        const [allPosts, reportedPosts, pendingP] = await Promise.all([
+          postsApi.getAllPosts(),
+          postsApi.getReportedPosts(),
+          postsApi.getPendingPosts()
+        ]);
 
-        // Set dashboard stats
+
+        setPendingPosts(pendingP);
+        setPosts(allPosts);
+
+
+        // Count posts by status        // Set dashboard stats with real data
         setDashboardStats([
           {
             title: "Total Posts",
-            value: postsResponse.length,
-            change: "+5 today",
+            value: allPosts.length,
+            change: `${allPosts.filter(post => {
+              const today = new Date();
+              const postDate = new Date(post.createdAt);
+              return postDate.toDateString() === today.toDateString();
+            }).length} today`,
             icon: MessageSquare,
             color: "text-blue-600",
             bg: "bg-blue-100"
           },
           {
-            title: "Posts Flagged",
-            value: postsResponse.filter(post => post.flags && post.flags.length > 0).length,
-            change: "+2 today",
+            title: "Pending Approval",
+            value: pendingP.length,
+            change: `Need moderation`,
+            icon: AlertTriangle,
+            color: "text-amber-600",
+            bg: "bg-amber-100",
+            action: () => setActiveTab("pending")
+          },
+          {
+            title: "Reported Posts",
+            value: reportedPosts.length,
+            change: `${reportedPosts.filter(post => {
+              const today = new Date();
+              const reportDate = new Date(post.reportedAt || post.updatedAt);
+              return reportDate.toDateString() === today.toDateString();
+            }).length} today`,
             icon: Flag,
             color: "text-red-600",
             bg: "bg-red-100",
           },
           {
             title: "Popular Posts",
-            value: postsResponse.filter(post => post.votes && post.votes.length > 10).length,
-            change: "+3 this week",
+            value: allPosts.filter(post => post.votes && post.votes.length > 10).length,
+            change: "Last 7 days",
             icon: ThumbsUp,
             color: "text-green-600",
             bg: "bg-green-100",
           },
           {
-            title: "Posts Reviewed",
-            value: "45",
-            change: "+8 this week",
+            title: "Reviewed Posts",
+            value: allPosts.filter(post => post.reviewed).length,
+            change: "Total",
             icon: CheckCircle,
             color: "text-purple-600",
             bg: "bg-purple-100",
@@ -106,7 +133,7 @@ export default function ModeratorDashboard() {
 
       } catch (err) {
         console.error("Failed to fetch posts data", err);
-        showToast("Failed to load posts data. Please try again.", { type: "error" });
+        showToast("Failed to load dashboard data. Please try again.", { type: "error" });
       } finally {
         setIsLoading(false);
       }
@@ -129,17 +156,106 @@ export default function ModeratorDashboard() {
     }
   };
 
+  // Handle approving a reported post
+  const handleApprovePost = async (postId) => {
+    try {
+      await postsApi.approvePost(postId);
+
+      // Update the post in both state arrays
+      setPosts(posts.map(post =>
+        post._id === postId ? { ...post, status: 'approved', reviewed: true } : post
+      ));
+
+      // Remove the post from pendingPosts array since it's no longer pending
+      setPendingPosts(pendingPosts.filter(post => post._id !== postId));
+
+      // Update dashboard stats
+      setDashboardStats(prevStats =>
+        prevStats.map(stat => {
+          if (stat.title === "Pending Approval") {
+            return { ...stat, value: stat.value > 0 ? stat.value - 1 : 0 };
+          }
+          if (stat.title === "Reviewed Posts") {
+            return { ...stat, value: stat.value + 1 };
+          }
+          return stat;
+        })
+      );
+
+      showToast("Post approved successfully", { type: "success" });
+    } catch (error) {
+      console.error("Failed to approve post:", error);
+      showToast("Failed to approve post", { type: "error" });
+    }
+  };
+
+  // Handle rejecting a reported post
+  const handleRejectPost = async (postId) => {
+    const reason = prompt("Please provide a reason for rejecting this post:");
+    if (reason) {
+      try {
+        await postsApi.rejectPost(postId, reason);
+
+        // Update the post in both state arrays
+        setPosts(posts.map(post =>
+          post._id === postId ? { ...post, status: 'rejected', reviewed: true, rejectionReason: reason } : post
+        ));
+
+        // Remove the post from pendingPosts array since it's no longer pending
+        setPendingPosts(pendingPosts.filter(post => post._id !== postId));
+
+        // Update dashboard stats
+        setDashboardStats(prevStats =>
+          prevStats.map(stat => {
+            if (stat.title === "Pending Approval") {
+              return { ...stat, value: stat.value > 0 ? stat.value - 1 : 0 };
+            }
+            if (stat.title === "Reviewed Posts") {
+              return { ...stat, value: stat.value + 1 };
+            }
+            return stat;
+          })
+        );
+
+        showToast("Post rejected successfully", { type: "success" });
+      } catch (error) {
+        console.error("Failed to reject post:", error);
+        showToast("Failed to reject post", { type: "error" });
+      }
+    }
+  };
+
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  // Filter posts based on search term
-  const filteredPosts = posts.filter(post =>
-    post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.author?.username?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter posts based on search term and filter status
+  const filteredPosts = posts.filter(post => {
+    // Apply search filter
+    const matchesSearch =
+      post.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.author?.username?.toLowerCase().includes(searchTerm.toLowerCase());
+
+    // Apply status filter
+    let matchesStatus = true;
+    if (filterStatus !== 'all') {
+      if (filterStatus === 'pending') {
+        matchesStatus = post.status === 'pending';
+      } else if (filterStatus === 'approved') {
+        matchesStatus = post.status === 'approved';
+      } else if (filterStatus === 'rejected') {
+        matchesStatus = post.status === 'rejected';
+      } else if (filterStatus === 'flagged') {
+        matchesStatus = post.flags && post.flags.length > 0;
+      } else if (filterStatus === 'popular') {
+        matchesStatus = post.votes && post.votes.length > 10;
+      }
+    }
+
+    return matchesSearch && matchesStatus;
+  });
 
   const renderDashboard = () => (
     <div className="space-y-6">
@@ -148,13 +264,20 @@ export default function ModeratorDashboard() {
         {dashboardStats.map((stat) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.title}>
+            <Card
+              key={stat.title}
+              className={stat.action ? "cursor-pointer hover:shadow-md transition-shadow" : ""}
+              onClick={stat.action || undefined}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-gray-600">{stat.title}</p>
                     <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
                     <p className="text-sm text-green-600 mt-1">{stat.change}</p>
+                    {stat.action && (
+                      <p className="text-xs text-blue-500 mt-1 underline">Click to view details</p>
+                    )}
                   </div>
                   <div className={`${stat.bg} ${stat.color} p-3 rounded-full`}>
                     <Icon className="h-6 w-6" />
@@ -177,17 +300,38 @@ export default function ModeratorDashboard() {
           ) : (
             <div className="space-y-4">
               {posts.slice(0, 5).map((post) => (
-                <div key={post._id} className="flex items-center space-x-4 p-3 rounded-lg border">
-                  <div className="bg-blue-100 p-2 rounded-full">
-                    <MessageSquare className="h-4 w-4 text-blue-600" />
+                <div
+                  key={post._id}
+                  className="flex items-center space-x-4 p-3 rounded-lg border hover:bg-gray-50 cursor-pointer"
+                  onClick={() => navigate(`/post/${post._id}`)}
+                >
+                  <div className={`p-2 rounded-full ${post.status === 'pending' ? 'bg-amber-100' :
+                    post.status === 'approved' ? 'bg-green-100' :
+                      post.status === 'rejected' ? 'bg-red-100' :
+                        'bg-blue-100'
+                    }`}>
+                    {post.status === 'pending' ? (
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                    ) : post.status === 'approved' ? (
+                      <CheckCircle className="h-4 w-4 text-green-600" />
+                    ) : post.status === 'rejected' ? (
+                      <XCircle className="h-4 w-4 text-red-600" />
+                    ) : (
+                      <MessageSquare className="h-4 w-4 text-blue-600" />
+                    )}
                   </div>
                   <div className="flex-1">
                     <p className="font-medium truncate">{post.title}</p>
                     <p className="text-sm text-gray-500">by {post.author?.username || 'Unknown'}</p>
                   </div>
-                  <span className="text-xs text-gray-400">
-                    {new Date(post.createdAt).toLocaleDateString()}
-                  </span>
+                  <div className="flex flex-col items-end">
+                    {post.status === 'pending' && (
+                      <Badge className="mb-1 bg-amber-100 text-amber-800 border-amber-300">Pending</Badge>
+                    )}
+                    <span className="text-xs text-gray-400">
+                      {new Date(post.createdAt).toLocaleDateString()}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -226,9 +370,11 @@ export default function ModeratorDashboard() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Posts</SelectItem>
+            <SelectItem value="pending">Pending Approval</SelectItem>
+            <SelectItem value="approved">Approved</SelectItem>
+            <SelectItem value="rejected">Rejected</SelectItem>
             <SelectItem value="flagged">Flagged</SelectItem>
             <SelectItem value="popular">Popular</SelectItem>
-            <SelectItem value="recent">Recent</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -244,6 +390,18 @@ export default function ModeratorDashboard() {
                   <div className="flex-1">
                     <div className="flex items-center space-x-2 mb-2">
                       <Badge variant="outline">{post.category?.name || 'Uncategorized'}</Badge>
+                      {post.status === 'pending' && (
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-300">Pending</Badge>
+                      )}
+                      {post.status === 'approved' && (
+                        <Badge className="bg-green-100 text-green-800 border-green-300">Approved</Badge>
+                      )}
+                      {post.status === 'rejected' && (
+                        <Badge className="bg-red-100 text-red-800 border-red-300">Rejected</Badge>
+                      )}
+                      {post.flags && post.flags.length > 0 && (
+                        <Badge className="bg-red-100 text-red-800 border-red-300">Flagged</Badge>
+                      )}
                       <span className="text-sm text-gray-500">{new Date(post.createdAt).toLocaleDateString()}</span>
                     </div>
                     <h3 className="font-semibold text-lg mb-1">{post.title}</h3>
@@ -260,14 +418,21 @@ export default function ModeratorDashboard() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent>
-                      <DropdownMenuItem onClick={() => navigate(`/posts/${post._id}`)}>
+                      <DropdownMenuItem onClick={() => navigate(`/post/${post._id}`)}>
                         <Eye className="h-4 w-4 mr-2" />View
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => navigate(`/edit-post/${post._id}`)}>
-                        <Edit className="h-4 w-4 mr-2" />Edit
-                      </DropdownMenuItem>
+                      {(post.status === 'reported' || post.status === 'pending') && (
+                        <>
+                          <DropdownMenuItem onClick={() => handleApprovePost(post._id)}>
+                            <CheckCircle className="h-4 w-4 mr-2 text-green-500" />Approve
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleRejectPost(post._id)}>
+                            <XCircle className="h-4 w-4 mr-2 text-red-500" />Reject
+                          </DropdownMenuItem>
+                        </>
+                      )}
                       <DropdownMenuItem onClick={() => handleDeletePost(post._id)}>
-                        <Trash2 className="h-4 w-4 mr-2" />Delete
+                        <Trash2 className="h-4 w-4 mr-2 text-red-500" />Delete
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -313,10 +478,104 @@ export default function ModeratorDashboard() {
     </div>
   )
 
+  // Render pending posts section
+  const renderPendingPosts = () => {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h2 className="text-2xl font-bold">Pending Posts Review</h2>
+          <Badge className="bg-amber-100 text-amber-800 border-amber-300 px-3 py-1">
+            {pendingPosts.length} posts waiting for approval
+          </Badge>
+        </div>
+
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-amber-50 border-b border-amber-100">
+            <CardTitle className="text-amber-800 flex items-center">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              Posts Requiring Moderation
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0 divide-y divide-gray-100">
+            {isLoading ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500"></div>
+              </div>
+            ) : pendingPosts.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">
+                <CheckCircle className="h-12 w-12 mx-auto text-green-500 mb-3" />
+                <p>No pending posts to review!</p>
+                <p className="text-sm mt-1">All posts have been reviewed.</p>
+              </div>
+            ) : (
+              pendingPosts.map((post) => (
+                <div key={post._id} className="p-4 hover:bg-gray-50">
+                  <div className="flex justify-between items-start">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2 mb-2">
+                        <Badge variant="outline">{post.category?.name || 'Uncategorized'}</Badge>
+                        <Badge className="bg-amber-100 text-amber-800 border-amber-300">Pending</Badge>
+                        <span className="text-sm text-gray-500">
+                          Submitted {new Date(post.createdAt).toLocaleDateString()} by {post.author?.username || 'Unknown'}
+                        </span>
+                      </div>
+                      <h3 className="font-semibold text-lg mb-1">{post.title}</h3>
+                      <p className="text-sm text-gray-600 line-clamp-2 mb-3">{post.content}</p>
+
+                      <div className="flex space-x-3 mt-4">
+                        <Button
+                          size="sm"
+                          onClick={() => navigate(`/post/${post._id}`)}
+                          variant="outline"
+                          className="border-gray-300 text-gray-700"
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Details
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleApprovePost(post._id)}
+                          className="bg-green-500 hover:bg-green-600 text-white"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Approve
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleRejectPost(post._id)}
+                          variant="outline"
+                          className="border-red-500 text-red-500 hover:bg-red-50"
+                        >
+                          <XCircle className="h-4 w-4 mr-2" />
+                          Reject
+                        </Button>
+                      </div>
+                    </div>
+                    {post.imageUrl || (post.images && post.images.length > 0) ? (
+                      <div className="ml-4 flex-shrink-0">
+                        <img
+                          src={post.images && post.images.length > 0 ? post.images[0].url : post.imageUrl}
+                          alt="Post thumbnail"
+                          className="w-24 h-24 object-cover rounded-md"
+                        />
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
         return renderDashboard()
+      case "pending":
+        return renderPendingPosts()
       case "posts":
         return renderPosts()
       case "comments":
@@ -381,8 +640,8 @@ export default function ModeratorDashboard() {
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex cursor-pointer items-center space-x-2 py-4 px-2 border-b-2 font-medium text-sm ${activeTab === tab.id
-                      ? "border-blue-500 text-blue-600"
-                      : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+                    ? "border-blue-500 text-blue-600"
+                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
                     }`}
                 >
                   <Icon className="h-4 w-4" />
