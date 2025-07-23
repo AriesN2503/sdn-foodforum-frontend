@@ -15,6 +15,7 @@ import {
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
+import { register } from "../api/auth"
 import postsApi from "../api/posts"
 import { deleteUser, getUsers, updateUser } from "../api/user"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
@@ -32,6 +33,13 @@ export default function AdminDashboard() {
     const [posts, setPosts] = useState([])
     const [editingUser, setEditingUser] = useState(null)
     const [deletingUser, setDeletingUser] = useState(null)
+    const [addingUser, setAddingUser] = useState(false)
+    const [newUser, setNewUser] = useState({
+        username: '',
+        email: '',
+        password: '',
+        role: 'user'
+    }
     const [isLoading, setIsLoading] = useState(true)
     const [dashboardStats, setDashboardStats] = useState([])
     const [searchTerm, setSearchTerm] = useState("")
@@ -49,8 +57,7 @@ export default function AdminDashboard() {
 
     const tabs = [
         { id: "dashboard", label: "Dashboard", icon: TrendingUp },
-        { id: "users", label: "Users", icon: Users },
-        { id: "posts", label: "Posts", icon: MessageSquare },
+        { id: "users", label: "Users", icon: Users }
     ]
 
     // Fetch users and posts data
@@ -166,6 +173,41 @@ export default function AdminDashboard() {
         logout();
         navigate('/login');
     };
+  
+    // Add a handler for adding a new user
+    const handleAddUser = async () => {
+        try {
+            // Validate inputs
+            if (!newUser.username || !newUser.email || !newUser.password) {
+                showToast("Please fill in all required fields", { type: "error" });
+                return;
+            }
+
+            // Register the new user
+            const response = await register(newUser);
+
+            // Add the new user to the users list
+            setUsers(prev => [...prev, response.user]);
+
+            // Reset the form and close the modal
+            setNewUser({
+                username: '',
+                email: '',
+                password: '',
+                role: 'user'
+            });
+            setAddingUser(false);
+
+            showToast("User added successfully!", { type: "success" });
+        } catch (err) {
+            console.error("Failed to add user:", err);
+            if (err?.response?.data?.error?.includes("duplicate key error")) {
+                showToast("Email already exists. Please use a different one.", { type: "error" });
+            } else {
+                showToast("Failed to add user: " + (err.response?.data?.error || err.message), { type: "error" });
+            }
+        }
+    };
 
     const renderDashboard = () => (
         <div className="space-y-6">
@@ -241,7 +283,7 @@ export default function AdminDashboard() {
         <div className="space-y-6">
             <div className="flex justify-between items-center">
                 <h2 className="text-2xl font-bold">Users Management</h2>
-                <Button className="bg-orange-500 hover:bg-orange-600">
+                <Button className="bg-orange-500 hover:bg-orange-600" onClick={() => setAddingUser(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add User
                 </Button>
@@ -381,6 +423,58 @@ export default function AdminDashboard() {
                             >
                                 Confirm Delete
                             </Button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Add User Modal */}
+            {addingUser && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-lg w-full max-w-md space-y-4">
+                        <h2 className="text-xl font-semibold">Add New User</h2>
+                        <div>
+                            <label className="block text-sm mb-1">Username</label>
+                            <Input
+                                value={newUser.username}
+                                onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
+                                placeholder="Enter username"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm mb-1">Email</label>
+                            <Input
+                                type="email"
+                                value={newUser.email}
+                                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                                placeholder="Enter email address"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm mb-1">Password</label>
+                            <Input
+                                type="password"
+                                value={newUser.password}
+                                onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
+                                placeholder="Enter password"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm mb-1">Role</label>
+                            <select
+                                value={newUser.role}
+                                onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                                className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
+                            >
+                                <option value="user">User</option>
+                                <option value="moderator">Moderator</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+
+                        <div className="flex justify-end space-x-2">
+                            <Button variant="outline" onClick={() => setAddingUser(false)}>Cancel</Button>
+                            <Button className="bg-orange-500 hover:bg-orange-600" onClick={handleAddUser}>Add User</Button>
                         </div>
                     </div>
                 </div>
