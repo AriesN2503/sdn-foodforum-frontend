@@ -21,7 +21,8 @@ import {
     MessageCircle,
     ChefHat,
     Image as ImageIcon,
-    ExternalLink
+    ExternalLink,
+    LogOut
 } from "lucide-react"
 import { getCurrentUser, updateUser, getUserFavoritePosts } from "../api/user"
 import postsApi from "../api/posts"
@@ -126,7 +127,7 @@ export function UserProfile() {
     const [userPosts, setUserPosts] = useState([])
     const [favoritePosts, setFavoritePosts] = useState([])
     const [activeTab, setActiveTab] = useState("profile")
-    const { setUser } = useAuth()
+    const { setUser, logout } = useAuth()
     const navigate = useNavigate()
 
     const [profileData, setProfileData] = useState({
@@ -463,6 +464,19 @@ export function UserProfile() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            {/* Logout Button */}
+            <Button
+                variant="outline"
+                className="w-full mt-4 border-red-300 text-red-600 hover:bg-red-50 hover:text-red-700"
+                onClick={() => {
+                    logout();
+                    navigate('/login');
+                }}
+            >
+                <LogOut className="w-4 h-4 mr-2" />
+                Logout
+            </Button>
         </div>
     )
 }
