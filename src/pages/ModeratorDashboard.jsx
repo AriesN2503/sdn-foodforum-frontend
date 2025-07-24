@@ -49,6 +49,7 @@ export default function ModeratorDashboard() {
   const [isRejectModalOpen, setIsRejectModalOpen] = useState(false)
   const [selectedPostId, setSelectedPostId] = useState(null)
   const [rejectionReason, setRejectionReason] = useState("")
+  const [lastModifiedPostId, setLastModifiedPostId] = useState(null)
   const { user, logout } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
@@ -60,6 +61,14 @@ export default function ModeratorDashboard() {
       navigate('/', { replace: true })
     }
   }, [user, showToast, navigate])
+
+  // Reset lastModifiedPostId when activeTab changes by user clicking tabs
+  useEffect(() => {
+    // Only reset if changing to a tab other than "posts"
+    if (activeTab !== "posts") {
+      setLastModifiedPostId(null);
+    }
+  }, [activeTab]);
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: TrendingUp },
@@ -193,6 +202,13 @@ export default function ModeratorDashboard() {
       );
 
       showToast("Post approved successfully", { type: "success" });
+
+      // Track the modified post ID for highlighting
+      setLastModifiedPostId(postId);
+
+      // Switch to the "All Posts" tab to display the approved post and reset filter
+      setActiveTab("posts");
+      setFilterStatus("all");
     } catch (error) {
       console.error("Failed to approve post:", error);
       showToast("Failed to approve post", { type: "error" });
@@ -233,6 +249,13 @@ export default function ModeratorDashboard() {
       );
 
       showToast("Post rejected successfully", { type: "success" });
+
+      // Track the modified post ID for highlighting
+      setLastModifiedPostId(selectedPostId);
+
+      // Switch to the "All Posts" tab to display the rejected post and reset filter
+      setActiveTab("posts");
+      setFilterStatus("all");
     } catch (error) {
       console.error("Failed to reject post:", error);
       showToast("Failed to reject post", { type: "error" });
@@ -243,6 +266,17 @@ export default function ModeratorDashboard() {
     logout();
     navigate('/login');
   };
+
+  // Clear the highlighted post after a delay
+  useEffect(() => {
+    if (lastModifiedPostId) {
+      const timer = setTimeout(() => {
+        setLastModifiedPostId(null);
+      }, 5000); // Remove highlight after 5 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [lastModifiedPostId]);
 
   // Filter posts based on search term and filter status
   const filteredPosts = posts.filter(post => {
@@ -398,7 +432,12 @@ export default function ModeratorDashboard() {
       ) : (
         <div className="space-y-4">
           {filteredPosts.map((post) => (
-            <Card key={post._id}>
+            <Card
+              key={post._id}
+              className={post._id === lastModifiedPostId
+                ? "border-2 border-blue-500 shadow-md transition-all duration-500"
+                : ""}
+            >
               <CardContent className="p-4">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
