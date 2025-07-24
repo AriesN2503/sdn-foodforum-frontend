@@ -5,6 +5,7 @@ import { useNavigate } from "react-router"
 import SearchHighlight from "./SearchHighlight"
 import PostStats from "./PostStats"
 import { upvotePost, downvotePost } from "../api/votes"
+import { Badge } from "./ui/badge";
 
 export function PostCard({
     id,
@@ -21,6 +22,7 @@ export function PostCard({
     downvotes = [], // Add downvotes array
     viewsCount = 0, // Add views count
     categories,
+    status, // Thêm status
 }) {
     const navigate = useNavigate()
 
@@ -29,6 +31,15 @@ export function PostCard({
     const [downvotesCount, setDownvotesCount] = useState(downvotes.length)
     const [userVote, setUserVote] = useState(null) // 'upvote' | 'downvote' | null
     const [loadingVote, setLoadingVote] = useState(false)
+
+    // Lấy user hiện tại từ localStorage
+    const currentUser = (() => {
+        try {
+            return JSON.parse(localStorage.getItem("foodforum_auth"))?.user;
+        } catch {
+            return null;
+        }
+    })();
 
     const handlePostClick = () => {
         if (slug) {
@@ -97,7 +108,23 @@ export function PostCard({
                 <div className="flex-1 cursor-pointer" onClick={handlePostClick}>
                     <div className="flex items-center space-x-2 text-sm text-gray-500 mb-2">
                         <span className="text-orange-500">{Array.isArray(categories) && categories.length > 0 && categories[0] && categories[0].name ? categories[0].name : 'Danh mục'}</span>
-                        <span>Đăng bởi {author.username || author}</span>
+                        <button
+                            className="font-medium text-gray-700 hover:underline hover:text-orange-600 transition-colors bg-transparent border-none p-0 cursor-pointer"
+                            onClick={e => {
+                                e.stopPropagation();
+                                const authorUsername = author.username || author;
+                                if (currentUser && authorUsername === currentUser.username) {
+                                    navigate(`/profile/${authorUsername}`);
+                                } else {
+                                    navigate(`/user/${authorUsername}`);
+                                }
+                            }}
+                        >
+                            {author.username || author}
+                        </button>
+                        {/* Badge trạng thái */}
+                        {status === 'pending' && <Badge variant="warning">Chờ duyệt</Badge>}
+                        {status === 'rejected' && <Badge variant="destructive">Đã từ chối</Badge>}
                     </div>
                     <h3 className="text-xl font-semibold text-gray-800 mb-4 hover:text-orange-600 transition-colors">
                         <SearchHighlight text={title} searchTerm={searchTerm} />

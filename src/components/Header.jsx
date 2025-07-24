@@ -52,17 +52,28 @@ export default function Header() {
                 </Button>
               </Link>
               {user.username ? (
-                <Link to={`/profile/${user.username}`}>
-                  <Avatar className="h-9 w-9 cursor-pointer">
-                    {user.avatar ? (
-                      <AvatarImage src={user.avatar} />
-                    ) : (
-                      <AvatarFallback className="bg-orange-100 text-orange-600">
-                        {user.username.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    )}
-                  </Avatar>
-                </Link>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Avatar className="h-9 w-9 cursor-pointer">
+                      {user.avatar ? (
+                        <AvatarImage src={user.avatar} />
+                      ) : (
+                        <AvatarFallback className="bg-orange-100 text-orange-600">
+                          {user.username.slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      )}
+                    </Avatar>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={() => navigate(`/profile/${user.username}`)}>
+                      Xem hồ sơ
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={handleLogout}>
+                      Đăng xuất
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
                 <Avatar className="h-9 w-9 cursor-not-allowed opacity-60">
                   <AvatarFallback className="bg-orange-100 text-orange-600">

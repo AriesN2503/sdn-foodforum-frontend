@@ -62,13 +62,14 @@ export function CategoriesSidebar({ selectedCategory }) {
                                     <button
                                         key={category._id}
                                         onClick={() => {
-                                            // Ưu tiên slug, fallback name
-                                            const catSlug = category.slug || category.name
-                                            navigate(`/posts/all?categorySlugs=${encodeURIComponent(catSlug)}`)
+                                            const catSlug = category.slug || category.name;
+                                            navigate(`/posts/all?categorySlugs=${encodeURIComponent(catSlug)}`, {
+                                                state: { categoryName: category.name }
+                                            });
                                         }}
                                         className={`flex items-center space-x-3 w-full text-left py-2 px-2 rounded transition-colors ${isSelected
-                                                ? 'bg-orange-100 text-orange-600'
-                                                : 'text-gray-700 hover:text-orange-500 hover:bg-orange-50'
+                                            ? 'bg-orange-100 text-orange-600'
+                                            : 'text-gray-700 hover:text-orange-500 hover:bg-orange-50'
                                             }`}
                                     >
                                         <span className="text-lg">{category.icon}</span>

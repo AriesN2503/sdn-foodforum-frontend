@@ -3,14 +3,15 @@ import { Card, CardContent } from "./ui/card"
 
 export function PostFeed({ posts, onCommentClick, loading, selectedCategory, searchTerm }) {
     
-    console.log('posts in PostFeed: ', posts);
+    console.log('selectedCategory: ', selectedCategory);
+
     return (
         <div className="w-full">
             <Card>
                 <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-2xl font-bold text-gray-800">
-                            {selectedCategory ? `Bài Viết ${selectedCategory}` : 'Bài Viết Phổ Biến'}
+                            {selectedCategory ? `Bài Viết ${selectedCategory}` : 'Bài Viết Mới Nhất'}
                         </h2>
                     </div>
                     <div className="space-y-6">

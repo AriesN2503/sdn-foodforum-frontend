@@ -236,6 +236,7 @@ export default function CreatePost() {
         try {
             const response = await postsApi.createPost({
                 ...formData,
+                status: 'pending',
                 author: userId,
                 prepTimeMinutes: Number(formData.prepTimeMinutes) || 0,
                 cookTimeMinutes: Number(formData.cookTimeMinutes) || 0,

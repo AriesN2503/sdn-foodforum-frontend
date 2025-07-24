@@ -1,6 +1,5 @@
 import { Routes, Route } from "react-router"
 import ProtectedRoute from "./ProtectedRoute"
-import { useAuth } from "../hooks/useAuth"
 import Home from "../pages/Home"
 import AllPosts from "../pages/AllPosts"
 import PostDetail from "../pages/PostDetail"
@@ -14,6 +13,9 @@ import NotFound from "../pages/NotFound"
 import AdminLogin from "../pages/AdminLogin"
 import { MainLayout, HeaderLayout } from "../layout"
 import CreatePost from "../pages/CreatePost"
+import AdminPostDetail from "../pages/AdminPostDetail";
+import AdminHeaderLayout from "../components/admin/AdminHeaderLayout";
+import UserPublicProfile from "../pages/UserPublicProfile";
 
 const AppRoutes = () => {
     return (
@@ -44,10 +46,9 @@ const AppRoutes = () => {
             <Route
                 path="moderator"
                 element={
-                    // <ProtectedRoute requiredRole="moderator">
-                    //   <ModeratorDashboard />
-                    // </ProtectedRoute>
-                    <ModeratorDashboard />
+                    <ProtectedRoute requiredRole="moderator">
+                        <ModeratorDashboard />
+                    </ProtectedRoute>
                 }
             />
 
@@ -55,21 +56,24 @@ const AppRoutes = () => {
             <Route
                 path="admin"
                 element={
-                    // <ProtectedRoute requiredRole="admin">
-                    //   <AdminDashboard />
-                    // </ProtectedRoute>
-                    <AdminDashboard />
+                    <ProtectedRoute requiredRole="admin">
+                        <AdminHeaderLayout />
+                    </ProtectedRoute>
                 }
-            />
+            >
+                <Route path="" element={<AdminDashboard />} />
+                <Route path="posts/:id" element={<AdminPostDetail />} />
+                {/* Thêm các route admin khác ở đây nếu cần */}
+            </Route>
             <Route path="login" element={<Login />} />
             <Route path="register" element={<Register />} />
 
-            <Route path="/profile" element={<HeaderLayout />}>
+            <Route path="/profile" element={<HeaderLayout definedWidth='max-w-7xl'/>}>
                 <Route
                     path=":username"
                     element={
                         <ProtectedRoute requiredRole="user">
-                            <UserProfile />
+                            <UserProfile/>
                         </ProtectedRoute>
                     }
                 />
@@ -85,6 +89,9 @@ const AppRoutes = () => {
                 }
             />
             <Route path='admin/login' element={<AdminLogin />} />
+            <Route path="user/:username" element={<HeaderLayout />}>
+                <Route path="" element={<UserPublicProfile />} />   
+            </Route>
 
             <Route path='*' element={<NotFound />} />
         </Routes>

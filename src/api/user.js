@@ -57,8 +57,50 @@ export async function uploadAvatarToFirebase(file, userId) {
     return await getDownloadURL(avatarRef);
 }
 
+export const updateUserProfile = async (userId, data) => {
+    const response = await axiosClient.put(`/users/${userId}`, data);
+    return response.data;
+};
+
+export const uploadAvatar = async (file) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await axiosClient.post('/upload/image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    });
+    return response.data;
+};
+
+export const changePassword = async (userId, oldPassword, newPassword) => {
+    const response = await axiosClient.patch(`/users/${userId}/change-password`, { oldPassword, newPassword });
+    return response.data;
+};
 
 
 export const getMe = () => axiosClient.get('/users/me');
 export const getUserProfile = (username) => axiosClient.get(`/users/profile/${username}`);
+
+// Gửi lời mời kết bạn
+export const sendFriendRequest = async (userId) => {
+    const response = await axiosClient.post(`/users/${userId}/send-friend-request`, { to: userId });
+    return response.data;
+};
+
+// Lấy danh sách lời mời kết bạn
+export const getFriendRequests = async () => {
+    const response = await axiosClient.get('/users/friend-requests');
+    return response.data;
+};
+
+// Phản hồi lời mời kết bạn
+export const respondFriendRequest = async (requestId, action) => {
+    const response = await axiosClient.post('/users/respond-friend-request', { requestId, action });
+    return response.data;
+};
+
+// Lấy danh sách bạn bè của user
+export const getFriendsByUserId = async (userId) => {
+    const response = await axiosClient.get(`/users/${userId}/friends`);
+    return response.data;
+};
 

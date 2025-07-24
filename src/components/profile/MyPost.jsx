@@ -6,8 +6,9 @@ import { getPostById, updatePost, deletePost } from "../../api/post";
 import ConfirmationModal from "../admin/ConfirmationModal";
 import { Input } from "../ui/input";
 import { Textarea } from "../ui/textarea";
+import postsApi from '../../api/posts';
 
-export default function MyPost({ userPosts, navigate }) {
+export default function MyPost({ userId, navigate }) {
     const [modalOpen, setModalOpen] = useState(false);
     const [selectedPost, setSelectedPost] = useState(null);
     const [loadingDetail, setLoadingDetail] = useState(false);
@@ -16,14 +17,28 @@ export default function MyPost({ userPosts, navigate }) {
     const [editingPost, setEditingPost] = useState(null);
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [deletingPost, setDeletingPost] = useState(null);
-    const [posts, setPosts] = useState(userPosts);
+    const [posts, setPosts] = useState([]);
     const [saving, setSaving] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        setPosts(userPosts);
-    }, [userPosts]);
+        async function fetchUserPosts() {
+            setLoading(true);
+            try {
+                const userPosts = await postsApi.getUserPosts(userId);
+                setPosts(userPosts.posts || []);
+            } catch (err) {
+                setError('Không thể tải bài viết của bạn');
+            } finally {
+                setLoading(false);
+            }
+        }
+        if (userId) fetchUserPosts();
+    }, [userId]);
 
-    const activePosts = posts.filter(post => post.status === 'active');
+    const activePosts = posts.filter(post => post.status === 'active' || post.status === 'approved');
+    const pendingPosts = posts.filter(post => post.status === 'pending');
+    const rejectedPosts = posts.filter(post => post.status === 'rejected');
 
     const handleCardClick = async (postId) => {
         setLoadingDetail(true);
@@ -94,61 +109,107 @@ export default function MyPost({ userPosts, navigate }) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>My Posts</CardTitle>
+                <CardTitle>Bài Viết Của Tôi</CardTitle>
             </CardHeader>
             <CardContent>
-                {activePosts.length > 0 ? (
-                    <div className="space-y-4">
-                        {activePosts.map((post) => (
-                            <Card key={post._id} className="border border-orange-200 cursor-pointer group">
-                                <CardContent className="p-6">
-                                    <div className="flex flex-col md:flex-row gap-6">
-                                        {(post.image && post.image.length > 0) && (
-                                            <img
-                                                src={post.image[0]}
-                                                alt={post.title}
-                                                className="w-40 h-40 object-cover rounded-lg border border-orange-100 mb-4 md:mb-0"
-                                            />
-                                        )}
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-xs bg-orange-100 text-orange-600 px-2 py-1 rounded-full font-semibold">{post.status}</span>
-                                                <span className="text-xs text-gray-400">{new Date(post.createdAt).toLocaleDateString()}</span>
-                                                <span className="text-xs text-gray-400 ml-auto">{post.views} views</span>
-                                            </div>
-                                            <h3 className="text-xl font-bold text-orange-600 mb-2" onClick={() => handleCardClick(post._id)}>{post.title}</h3>
-                                            <p className="text-gray-700 mb-2 line-clamp-2">{post.content}</p>
-                                            {post.tags && post.tags.length > 0 && (
-                                                <div className="flex flex-wrap gap-2 mb-2">
-                                                    {post.tags.map((tag, idx) => (
-                                                        <span key={idx} className="bg-orange-50 text-orange-500 px-2 py-1 rounded-full text-xs font-medium">{tag}</span>
-                                                    ))}
-                                                </div>
-                                            )}
-                                            <div className="flex gap-2 mt-2">
-                                                <Button size="sm" className="bg-orange-500 hover:bg-orange-600 text-white" onClick={e => { e.stopPropagation(); openEditModal(post); }}>Edit</Button>
-                                                <Button size="sm" variant="outline" className="border-orange-500 text-orange-500 hover:bg-orange-50" onClick={e => { e.stopPropagation(); openDeleteModal(post); }}>Delete</Button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
+                {loading ? (
+                  <div className="text-center py-8 text-orange-500">Đang tải bài viết...</div>
                 ) : (
-                    <div className="text-center py-8">
-                        <MessageSquare className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                        <p className="text-gray-500">No posts yet</p>
-                        <p className="text-sm text-gray-400">
-                            Share your first post to get started!
-                        </p>
-                        <Button
-                            onClick={() => navigate('/create-post')}
-                            className="mt-4 bg-orange-500 hover:bg-orange-600 text-white"
-                        >
-                            Create Post
-                        </Button>
-                    </div>
+                  <>
+                    {/* Pending Posts */}
+                    {pendingPosts.length > 0 && (
+                      <div className="mb-8">
+                        <h3 className="text-lg font-semibold text-orange-500 mb-2">Bài viết chờ duyệt</h3>
+                        <div className="space-y-4">
+                          {pendingPosts.map((post) => (
+                            <Card key={post._id} className="border border-yellow-300 bg-yellow-50 cursor-pointer group">
+                              <CardContent className="p-6">
+                                <div className="flex flex-col md:flex-row gap-6">
+                                  {(post.image && post.image.length > 0) && (
+                                    <img
+                                      src={post.image[0]}
+                                      alt={post.title}
+                                      className="w-40 h-40 object-cover rounded-lg border border-yellow-200 mb-4 md:mb-0"
+                                    />
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="text-xs bg-yellow-200 text-yellow-800 px-2 py-1 rounded-full font-semibold">Chờ duyệt</span>
+                                      <span className="text-xs text-gray-400">{new Date(post.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-yellow-800 mb-2" onClick={() => handleCardClick(post._id)}>{post.title}</h3>
+                                    <p className="text-gray-700 mb-2 line-clamp-2">{post.content}</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Active/Approved Posts */}
+                    {activePosts.length > 0 && (
+                      <div className="mb-8">
+                        <h3 className="text-lg font-semibold text-green-600 mb-2">Bài viết đã duyệt</h3>
+                        <div className="space-y-4">
+                          {activePosts.map((post) => (
+                            <Card key={post._id} className="border border-green-300 bg-green-50 cursor-pointer group">
+                              <CardContent className="p-6">
+                                <div className="flex flex-col md:flex-row gap-6">
+                                  {(post.image && post.image.length > 0) && (
+                                    <img
+                                      src={post.image[0]}
+                                      alt={post.title}
+                                      className="w-40 h-40 object-cover rounded-lg border border-green-200 mb-4 md:mb-0"
+                                    />
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full font-semibold">Đã duyệt</span>
+                                      <span className="text-xs text-gray-400">{new Date(post.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-green-800 mb-2" onClick={() => handleCardClick(post._id)}>{post.title}</h3>
+                                    <p className="text-gray-700 mb-2 line-clamp-2">{post.content}</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Rejected Posts */}
+                    {rejectedPosts.length > 0 && (
+                      <div className="mb-8">
+                        <h3 className="text-lg font-semibold text-red-600 mb-2">Bài viết bị từ chối</h3>
+                        <div className="space-y-4">
+                          {rejectedPosts.map((post) => (
+                            <Card key={post._id} className="border border-red-300 bg-red-50 cursor-pointer group">
+                              <CardContent className="p-6">
+                                <div className="flex flex-col md:flex-row gap-6">
+                                  {(post.image && post.image.length > 0) && (
+                                    <img
+                                      src={post.image[0]}
+                                      alt={post.title}
+                                      className="w-40 h-40 object-cover rounded-lg border border-red-200 mb-4 md:mb-0"
+                                    />
+                                  )}
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <span className="text-xs bg-red-200 text-red-800 px-2 py-1 rounded-full font-semibold">Bị từ chối</span>
+                                      <span className="text-xs text-gray-400">{new Date(post.createdAt).toLocaleDateString()}</span>
+                                    </div>
+                                    <h3 className="text-xl font-bold text-red-800 mb-2" onClick={() => handleCardClick(post._id)}>{post.title}</h3>
+                                    <p className="text-gray-700 mb-2 line-clamp-2">{post.content}</p>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Modal for post detail */}

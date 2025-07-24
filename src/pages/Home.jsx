@@ -4,11 +4,6 @@ import { PostFeed } from "../components/PostFeed"
 import postsApi from "../api/posts"
 import { useCategory } from "../hooks/useCategory"
 
-const mockComments = [
-    { id: "1", author: "u/anonymous", content: "hello 1", timestamp: "6 days ago", votes: 0, replies: [] },
-    { id: "2", author: "u/HuyTest", content: "Hello ne", timestamp: "6 days ago", votes: 0, replies: [] },
-    { id: "3", author: "u/anonymous", content: "Comment Updated test a3 3", timestamp: "10 days ago", votes: 0, replies: [] },
-]
 
 export default function Home() {
     const { selectedCategory } = useCategory()
@@ -40,8 +35,6 @@ export default function Home() {
                 //     postsData = await postsApi.getPostsByFilter(filter.toLowerCase())
                 // }
             }
-
-            console.log('Posts loaded:', postsData)
 
             // Transform posts to match frontend format
             const transformedPosts = postsData.map(post => ({
@@ -102,30 +95,9 @@ export default function Home() {
                 onBadgeChange={setActiveBadge}
                 loading={loading}
                 searchTerm=""
+                selectedCategory={selectedCategory}
             />
 
-            <CommentsModal
-                isOpen={isCommentsOpen}
-                onClose={() => setIsCommentsOpen(false)}
-                comments={[]}
-                newComment={newComment}
-                onNewCommentChange={setNewComment}
-                onPostComment={() => {
-                    setNewComment("")
-                }}
-                replyingTo={replyingTo}
-                replyText={replyText}
-                onReply={setReplyingTo}
-                onPostReply={() => {
-                    setReplyText("")
-                    setReplyingTo(null)
-                }}
-                onCancelReply={() => {
-                    setReplyingTo(null)
-                    setReplyText("")
-                }}
-                onReplyTextChange={setReplyText}
-            />
         </>
     )
 }

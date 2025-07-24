@@ -6,6 +6,8 @@ import Pagination from "../components/Pagination"
 import PostsFilter from "../components/PostsFilter"
 import postsApi from "../api/posts"
 import { useToast } from "../context/ToastContext"
+import { useLocation } from "react-router-dom";
+
 
 export default function AllPosts() {
     const [searchParams, setSearchParams] = useSearchParams()
@@ -26,6 +28,9 @@ export default function AllPosts() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState(null)
     const { toast } = useToast()
+    const location = useLocation();
+    const categoryName = location.state?.categoryName;
+
 
     // Get filters from URL params
     const getFiltersFromURL = () => ({
@@ -53,7 +58,7 @@ export default function AllPosts() {
         try {
             console.log('Loading posts with filters:', filters)
             setLoading(true)
-            
+
             const response = await postsApi.getAllPosts(filters)
 
             const { posts: postsData, pagination: paginationData } = response
@@ -173,7 +178,7 @@ export default function AllPosts() {
                     <p className="text-gray-600">Khám phá tất cả các bài viết trong cộng đồng FoodForum</p>
                 </div>
 
-                <PostsFilter 
+                <PostsFilter
                     filters={getFiltersFromURL()}
                     onFiltersChange={handleFiltersChange}
                     onSearch={handleSearch}
@@ -200,7 +205,7 @@ export default function AllPosts() {
                     <h1 className="text-3xl font-bold text-orange-600 mb-8">Tất cả bài viết</h1>
                     <div className="bg-red-50 border border-red-200 rounded-lg p-6">
                         <p className="text-red-600">{error}</p>
-                        <button 
+                        <button
                             onClick={() => loadPosts(currentFilters)}
                             className="mt-4 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600 transition-colors"
                         >
@@ -223,7 +228,7 @@ export default function AllPosts() {
             </div>
 
             {/* Filters */}
-            <PostsFilter 
+            <PostsFilter
                 filters={getFiltersFromURL()}
                 onFiltersChange={handleFiltersChange}
                 onSearch={handleSearch}
@@ -238,7 +243,7 @@ export default function AllPosts() {
                         {getFiltersFromURL().search ? 'Không tìm thấy bài viết phù hợp' : 'Chưa có bài viết nào'}
                     </h3>
                     <p className="text-gray-500">
-                        {getFiltersFromURL().search 
+                        {getFiltersFromURL().search
                             ? 'Thử thay đổi từ khóa tìm kiếm hoặc bộ lọc'
                             : 'Hãy là người đầu tiên chia sẻ công thức nấu ăn!'
                         }
@@ -246,12 +251,13 @@ export default function AllPosts() {
                 </div>
             ) : (
                 <>
-                    <PostFeed 
+                    <PostFeed
                         posts={posts}
                         searchTerm={getFiltersFromURL().search}
                         onCommentClick={handleCommentClick}
+                        selectedCategory={categoryName}
                     />
-                    
+
                     {/* Pagination */}
                     <div className="mt-8">
                         <Pagination

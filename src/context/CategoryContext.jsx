@@ -3,7 +3,7 @@ import { createContext, useState } from 'react'
 export const CategoryContext = createContext()
 
 export const CategoryProvider = ({ children }) => {
-    const [selectedCategory, setSelectedCategory] = useState('Hot')
+    const [selectedCategory, setSelectedCategory] = useState('Phổ Biến')
 
     const selectCategory = (categoryName) => {
         setSelectedCategory(categoryName)

@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogTitle } from '../ui/dialog';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import useChatSocket from '../../hooks/useChatSocket';
 import { getMessages, getConversations, sendMessage as sendMessageApi } from '../../api/chat';
-import { getUsers } from '../../api/user';
+import { getUsers, getFriendsByUserId } from '../../api/user';
 import { useToast } from '../../context/ToastContext';
 import { createConversation } from '../../api/chat';
 
@@ -259,15 +259,17 @@ const ChatPage = () => {
         setIsTyping(text.length > 0);
     };
 
-    // Khi bấm dấu cộng, fetch danh sách user
+    // Khi bấm dấu cộng, fetch danh sách bạn bè
     const handleStartNewChat = async () => {
         setIsUserModalOpen(true);
         setIsLoadingUsers(true);
         try {
-            const data = await getUsers();
+            // Lấy userId hiện tại
+            const userId = currentUser._id || currentUser.id;
+            const data = await getFriendsByUserId(userId);
             setAllUsers(data || []);
         } catch {
-            showErrorToast('Không thể tải danh sách người dùng');
+            showErrorToast('Không thể tải danh sách bạn bè');
         } finally {
             setIsLoadingUsers(false);
         }
@@ -403,7 +405,7 @@ const ChatPage = () => {
                     />
                     <div className="max-h-80 overflow-y-auto space-y-2">
                         {isLoadingUsers ? (
-                            <div className="text-center py-4 text-gray-500">Đang tải danh sách người dùng...</div>
+                            <div className="text-center py-4 text-gray-500">Đang tải danh sách bạn bè...</div>
                         ) : allUsers.filter(user =>
                             String(user._id || user.id) !== String(currentUser._id || currentUser.id) &&
                             user.username && user.username.toLowerCase().includes(userSearch.toLowerCase())
@@ -414,7 +416,7 @@ const ChatPage = () => {
                                 onClick={() => handleSelectUser(user)}
                             >
                                 <Avatar className="w-8 h-8">
-                                    <AvatarImage src={user.profilePicture} alt={user.username} />
+                                    <AvatarImage src={user.avatar || user.profilePicture} alt={user.username} />
                                     <AvatarFallback>{user.username?.charAt(0).toUpperCase()}</AvatarFallback>
                                 </Avatar>
                                 <span className="text-base text-left">{user.username}</span>
