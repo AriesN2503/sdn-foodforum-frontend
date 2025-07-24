@@ -59,6 +59,18 @@ const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path='profile/:id'
+        element={
+          <UserProfile />
+        }
+      />
+      <Route
+        path='profile/:id'
+        element={
+          <UserProfile />
+        }
+      />
       {/* Route my-posts đã được di chuyển vào MainLayout */}
       <Route
         path="chat"
