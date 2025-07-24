@@ -69,8 +69,10 @@ const postsApi = {
 
     // Delete a post
     deletePost: async (id) => {
+        console.log(id)
         try {
             const response = await axiosClient.delete(`/posts/${id}`);
+            console.log(response.data)
             return response.data;
         } catch (error) {
             console.error('Error deleting post:', error);
