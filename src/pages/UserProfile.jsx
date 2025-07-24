@@ -430,7 +430,11 @@ export default function UserProfile() {
                                 <div key={c._id} className="mb-4 border-b pb-2">
                                     <div className="text-gray-700">{c.content}</div>
                                     <div className="text-xs text-gray-400">
-                                        Trong bài: <a href={`/posts/${c.post.slug}`} className="text-orange-500 hover:underline">{c.post.title}</a>
+                                        {c.post && c.post.slug ? (
+                                            <>Trong bài: <a href={`/posts/${c.post.slug}`} className="text-orange-500 hover:underline">{c.post.title}</a></>
+                                        ) : (
+                                            <span>Bài viết đã bị xoá hoặc không tồn tại</span>
+                                        )}
                                     </div>
                                 </div>
                             ))
