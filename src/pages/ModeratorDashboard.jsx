@@ -4,6 +4,7 @@ import { Button } from "../components/ui/button"
 import { Badge } from "../components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 import { Input } from "../components/ui/input"
+import { Textarea } from "../components/ui/textarea"
 import {
   Shield,
   Flag,
@@ -27,6 +28,7 @@ import {
   Trash2,
   Plus,
 } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select"
 import { useAuth } from "../hooks/useAuth"
@@ -43,6 +45,10 @@ export default function ModeratorDashboard() {
   const [filterStatus, setFilterStatus] = useState("all")
   const [isLoading, setIsLoading] = useState(true)
   const [dashboardStats, setDashboardStats] = useState([])
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false)
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false)
+  const [selectedPostId, setSelectedPostId] = useState(null)
+  const [rejectionReason, setRejectionReason] = useState("")
   const { user, logout } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
@@ -143,16 +149,20 @@ export default function ModeratorDashboard() {
   }, [showToast]);
 
   // Add a delete post handler
-  const handleDeletePost = async (postId) => {
-    if (window.confirm("Are you sure you want to delete this post?")) {
-      try {
-        await postsApi.deletePost(postId);
-        setPosts(posts.filter(post => post._id !== postId));
-        showToast("Post deleted successfully", { type: "success" });
-      } catch (error) {
-        console.error("Failed to delete post:", error);
-        showToast("Failed to delete post", { type: "error" });
-      }
+  const handleDeletePost = (postId) => {
+    setSelectedPostId(postId);
+    setIsDeleteModalOpen(true);
+  };
+
+  // Confirm delete action
+  const handleConfirmDelete = async () => {
+    try {
+      await postsApi.deletePost(selectedPostId);
+      setPosts(posts.filter(post => post._id !== selectedPostId));
+      showToast("Post deleted successfully", { type: "success" });
+    } catch (error) {
+      console.error("Failed to delete post:", error);
+      showToast("Failed to delete post", { type: "error" });
     }
   };
 
@@ -190,38 +200,42 @@ export default function ModeratorDashboard() {
   };
 
   // Handle rejecting a reported post
-  const handleRejectPost = async (postId) => {
-    const reason = prompt("Please provide a reason for rejecting this post:");
-    if (reason) {
-      try {
-        await postsApi.rejectPost(postId, reason);
+  const handleRejectPost = (postId) => {
+    setSelectedPostId(postId);
+    setRejectionReason("");
+    setIsRejectModalOpen(true);
+  };
 
-        // Update the post in both state arrays
-        setPosts(posts.map(post =>
-          post._id === postId ? { ...post, status: 'rejected', reviewed: true, rejectionReason: reason } : post
-        ));
+  // Confirm rejection with reason
+  const handleConfirmReject = async () => {
+    try {
+      await postsApi.rejectPost(selectedPostId, rejectionReason);
 
-        // Remove the post from pendingPosts array since it's no longer pending
-        setPendingPosts(pendingPosts.filter(post => post._id !== postId));
+      // Update the post in both state arrays
+      setPosts(posts.map(post =>
+        post._id === selectedPostId ? { ...post, status: 'rejected', reviewed: true, rejectionReason } : post
+      ));
 
-        // Update dashboard stats
-        setDashboardStats(prevStats =>
-          prevStats.map(stat => {
-            if (stat.title === "Pending Approval") {
-              return { ...stat, value: stat.value > 0 ? stat.value - 1 : 0 };
-            }
-            if (stat.title === "Reviewed Posts") {
-              return { ...stat, value: stat.value + 1 };
-            }
-            return stat;
-          })
-        );
+      // Remove the post from pendingPosts array since it's no longer pending
+      setPendingPosts(pendingPosts.filter(post => post._id !== selectedPostId));
 
-        showToast("Post rejected successfully", { type: "success" });
-      } catch (error) {
-        console.error("Failed to reject post:", error);
-        showToast("Failed to reject post", { type: "error" });
-      }
+      // Update dashboard stats
+      setDashboardStats(prevStats =>
+        prevStats.map(stat => {
+          if (stat.title === "Pending Approval") {
+            return { ...stat, value: stat.value > 0 ? stat.value - 1 : 0 };
+          }
+          if (stat.title === "Reviewed Posts") {
+            return { ...stat, value: stat.value + 1 };
+          }
+          return stat;
+        })
+      );
+
+      showToast("Post rejected successfully", { type: "success" });
+    } catch (error) {
+      console.error("Failed to reject post:", error);
+      showToast("Failed to reject post", { type: "error" });
     }
   };
 
@@ -657,6 +671,81 @@ export default function ModeratorDashboard() {
       <main className="p-6">
         {renderContent()}
       </main>
+
+      {/* Modals */}
+      {/* Delete Post Modal */}
+      <Dialog open={isDeleteModalOpen} onOpenChange={setIsDeleteModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete Post</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this post? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteModalOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-500 hover:bg-red-600 text-white"
+              onClick={() => {
+                handleConfirmDelete();
+                setIsDeleteModalOpen(false);
+              }}
+            >
+              Delete Post
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reject Post Modal */}
+      <Dialog open={isRejectModalOpen} onOpenChange={setIsRejectModalOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reject Post</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting this post. This will be visible to the author.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="mt-4">
+            <Textarea
+              placeholder="Enter reason for rejection..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              className="min-h-[100px]"
+            />
+          </div>
+          <DialogFooter className="mt-4">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsRejectModalOpen(false);
+                setRejectionReason("");
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-red-500 hover:bg-red-600 text-white"
+              onClick={() => {
+                if (rejectionReason.trim()) {
+                  handleConfirmReject();
+                  setIsRejectModalOpen(false);
+                  setRejectionReason("");
+                } else {
+                  showToast("Please provide a reason for rejection", { type: "error" });
+                }
+              }}
+            >
+              Reject Post
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

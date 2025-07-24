@@ -8,7 +8,7 @@ import { Input } from "../components/ui/input";
 import { Badge } from "../components/ui/badge";
 import {
     Edit, Trash2, Plus, Search, Clock, CheckCircle, XCircle, Filter, Eye,
-    ThumbsUp, MessageSquare
+    ThumbsUp, MessageSquare, X
 } from "lucide-react";
 import { useToast } from "../context/ToastContext";
 import { useAuth } from "../hooks/useAuth";
@@ -19,12 +19,28 @@ import {
 import {
     Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from "../components/ui/select";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogClose,
+} from "../components/ui/dialog";
+import { Textarea } from "../components/ui/textarea";
 
 export default function UserPosts() {
     const [posts, setPosts] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState("");
     const [filterStatus, setFilterStatus] = useState("all");
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+    const [postToDelete, setPostToDelete] = useState(null);
+    const [editDialogOpen, setEditDialogOpen] = useState(false);
+    const [postToEdit, setPostToEdit] = useState(null);
+    const [editTitle, setEditTitle] = useState("");
+    const [editContent, setEditContent] = useState("");
     const { user } = useAuth();
     const { showToast } = useToast();
     const navigate = useNavigate();
@@ -51,24 +67,76 @@ export default function UserPosts() {
 
     // Handle edit post
     const handleEditPost = (postId) => {
-        navigate(`/edit-post/${postId}`);
+        const post = posts.find(p => p._id === postId);
+        if (post) {
+            setPostToEdit(post);
+            setEditTitle(post.title);
+            setEditContent(post.content);
+            setEditDialogOpen(true);
+        }
+    };
+
+    // Handle save edit
+    const handleSaveEdit = async () => {
+        if (!postToEdit) return;
+
+        try {
+            await postsApi.updatePost(postToEdit._id, {
+                title: editTitle,
+                content: editContent
+            });
+
+            // Update local posts state
+            setPosts(posts.map(post =>
+                post._id === postToEdit._id
+                    ? { ...post, title: editTitle, content: editContent }
+                    : post
+            ));
+
+            setEditDialogOpen(false);
+            showToast("Post updated successfully", { type: "success" });
+        } catch (error) {
+            console.error("Failed to update post:", error);
+            showToast("Failed to update post", { type: "error" });
+        }
     };
 
     // Handle delete post
     const handleDeletePost = async (postId) => {
-        if (window.confirm("Are you sure you want to delete this post?")) {
-            try {
-                await postsApi.deletePost(postId);
-                setPosts(posts.filter(post => post._id !== postId));
-                showToast("Post deleted successfully", { type: "success" });
-            } catch (error) {
-                console.error("Failed to delete post:", error);
-                showToast("Failed to delete post", { type: "error" });
-            }
-        }
+        setPostToDelete(postId);
+        setDeleteDialogOpen(true);
     };
 
-    // Filter posts based on search term and status
+    // Confirm delete post
+    const confirmDeletePost = async () => {
+        if (!postToDelete) return;
+
+        try {
+            await postsApi.deletePost(postToDelete);
+            setPosts(posts.filter(post => post._id !== postToDelete));
+            setDeleteDialogOpen(false);
+            showToast("Post deleted successfully", { type: "success" });
+        } catch (error) {
+            console.error("Failed to delete post:", error);
+
+            // Show more specific error message based on status code
+            if (error.response) {
+                if (error.response.status === 403) {
+                    showToast("You don't have permission to delete this post", { type: "error" });
+                } else if (error.response.status === 404) {
+                    showToast("Post not found. It may have been already deleted.", { type: "error" });
+                    // Remove from local state since it's gone on the server
+                    setPosts(posts.filter(post => post._id !== postToDelete));
+                } else {
+                    showToast(`Error: ${error.response.data?.message || "Failed to delete post"}`, { type: "error" });
+                }
+            } else {
+                showToast("Failed to delete post. Please try again later.", { type: "error" });
+            }
+
+            setDeleteDialogOpen(false);
+        }
+    };    // Filter posts based on search term and status
     const filteredPosts = posts.filter(post => {
         // Apply search filter
         const matchesSearch =
@@ -159,40 +227,42 @@ export default function UserPosts() {
                     </CardContent>
                 </Card>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-4">
                     {filteredPosts.map((post) => (
-                        <Card key={post._id} className="overflow-hidden flex flex-col h-full">
-                            <CardHeader className="pb-2 space-y-2">
-                                <div className="flex items-center justify-between mb-1">
-                                    {getStatusBadge(post.status)}
-                                    <span className="text-sm text-gray-500 ml-2 flex-shrink-0">
-                                        {new Date(post.createdAt).toLocaleDateString()}
-                                    </span>
+                        <div key={post._id} className="border rounded-lg p-4 hover:bg-gray-50">
+                            <div className="flex justify-between items-start mb-2">
+                                <div>
+                                    <div className="font-medium text-lg mb-1">{post.title}</div>
+                                    <div className="text-sm text-gray-500 mb-2">{post.content}</div>
                                 </div>
-                                <CardTitle className="truncate text-lg">{post.title}</CardTitle>
-                                <CardDescription className="line-clamp-2 text-sm">{post.content}</CardDescription>
-                            </CardHeader>
-                            <CardContent className="pt-0 pb-4 flex-grow">
-                                <div className="flex flex-wrap items-center text-sm text-gray-500 gap-3">
-                                    <span className="flex items-center">
+                                <div className="flex flex-col items-end">
+                                    {getStatusBadge(post.status)}
+                                    <div className="text-sm text-gray-500 mt-1">
+                                        {new Date(post.createdAt).toLocaleDateString()}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex justify-between items-center mt-4">
+                                <div className="flex items-center gap-4">
+                                    <span className="flex items-center text-gray-500 text-sm">
                                         <ThumbsUp className="h-3.5 w-3.5 mr-1" />
                                         {post.votes?.length || 0}
                                     </span>
-                                    <span className="flex items-center">
+                                    <span className="flex items-center text-gray-500 text-sm">
                                         <MessageSquare className="h-3.5 w-3.5 mr-1" />
                                         {post.comments?.length || 0}
                                     </span>
                                     {post.category && (
-                                        <Badge variant="outline" className="ml-auto">{post.category.name}</Badge>
+                                        <Badge variant="outline">{post.category.name}</Badge>
                                     )}
                                 </div>
-                            </CardContent>
-                            <CardFooter className="bg-gray-50 border-t flex justify-between mt-auto p-3">
-                                <Button variant="ghost" size="sm" onClick={() => navigate(`/post/${post._id}`)}>
-                                    <Eye className="h-4 w-4 mr-1" />
-                                    View
-                                </Button>
+
                                 <div className="flex gap-2">
+                                    <Button variant="ghost" size="sm" onClick={() => navigate(`/post/${post._id}`)}>
+                                        <Eye className="h-4 w-4 mr-1" />
+                                        View
+                                    </Button>
                                     {post.status === 'pending' && (
                                         <Button
                                             variant="outline"
@@ -213,16 +283,75 @@ export default function UserPosts() {
                                         Delete
                                     </Button>
                                 </div>
-                            </CardFooter>
+                            </div>
+
                             {post.status === 'rejected' && post.rejectionReason && (
-                                <div className="p-2.5 bg-red-50 border-t border-red-100 text-xs text-red-800 break-words">
+                                <div className="mt-3 p-2 bg-red-50 rounded text-xs text-red-800 break-words">
                                     <strong>Rejection reason:</strong> {post.rejectionReason}
                                 </div>
                             )}
-                        </Card>
+                        </div>
                     ))}
                 </div>
             )}
+
+            {/* Delete Confirmation Dialog */}
+            <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Delete Post</DialogTitle>
+                        <DialogDescription>
+                            Are you sure you want to delete this post? This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter className="flex space-x-2 justify-end">
+                        <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
+                        <Button
+                            variant="destructive"
+                            onClick={confirmDeletePost}
+                        >
+                            Delete
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Edit Post Dialog */}
+            <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                <DialogContent className="sm:max-w-[600px]">
+                    <DialogHeader>
+                        <DialogTitle>Edit Post</DialogTitle>
+                        <DialogDescription>
+                            Make changes to your post here.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="grid gap-4 py-4">
+                        <div className="grid gap-2">
+                            <label htmlFor="title" className="text-sm font-medium">Title</label>
+                            <Input
+                                id="title"
+                                value={editTitle}
+                                onChange={(e) => setEditTitle(e.target.value)}
+                                placeholder="Post title"
+                            />
+                        </div>
+                        <div className="grid gap-2">
+                            <label htmlFor="content" className="text-sm font-medium">Content</label>
+                            <Textarea
+                                id="content"
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                placeholder="Post content"
+                                rows={8}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleSaveEdit}>Save changes</Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
